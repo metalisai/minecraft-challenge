@@ -123,12 +123,22 @@ struct Quaternion
 		this->z = z;
 	}
 
+    static Quaternion Identity()
+    {
+        return Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+    }
+
 	static Quaternion AngleAxis(float angleDeg, Vec3 axis)
 	{
 		float halfAngleRad = (TUT_DEG2RAD_F*angleDeg)/2.0f;
 		float sinHAR = sinf(halfAngleRad);
 		return Quaternion(cosf(halfAngleRad), axis.x * sinHAR, axis.y * sinHAR, axis.z * sinHAR);
 	}
+
+    Quaternion inverse()
+    {
+        return Quaternion(-this->w, this->x, this->y, this->z);
+    }
 
 	float w, x, y, z;
 };
@@ -150,6 +160,11 @@ inline Vec3 operator * (Vec3 const &l, float const &r)
 	return Vec3(l.x*r, l.y*r, l.z*r);
 }
 
+inline Vec3 operator * (float const &r, Vec3 const &l)
+{
+	return Vec3(l.x*r, l.y*r, l.z*r);
+}
+
 inline Vec3 operator -= (Vec3 &l, Vec3 const &r)
 {
 	l.x -= r.x;
@@ -164,6 +179,14 @@ inline Vec3 operator += (Vec3 &l, Vec3 const &r)
 	l.y += r.y;
 	l.z += r.z;
 	return l;
+}
+
+inline Vec3 operator *= (Vec3 &l, float r)
+{
+    l.x *= r;
+    l.y *= r;
+    l.z *= r;
+    return l;
 }
 
 inline Mat4 operator * (Mat4 const &l, Mat4 const &r)
@@ -287,6 +310,7 @@ inline Mat4 Mat4::Identity()
 
 	return ret;
 }
+
 
 inline Quaternion operator * (Quaternion const &l, Quaternion const &r)
 {

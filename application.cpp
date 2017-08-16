@@ -33,7 +33,7 @@ void Application::start()
     settings.minorVersion = 0;
 
     this->window = new sf::Window(sf::VideoMode(1024, 768), "Minecraft clone", sf::Style::Default, settings);
-    this->mainRenderer = new Renderer();
+    this->mainRenderer = new Renderer(1024.0f, 768.0f);
     this->game = new Game();
     initialized = true;
 

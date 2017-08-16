@@ -10,7 +10,7 @@ namespace sf
 class Renderer
 {
 public:
-    Renderer();
+    Renderer(float width, float height);
     void presentFrame(sf::Window *window);
     void clearScreen(Vec4 color);
     void renderMesh(class Mesh *mesh, class Material *material, struct Mat4 *modelM);
@@ -18,4 +18,7 @@ public:
 
     static Shader *defaultShader;
     static Material *defaultMaterial;
+
+    float width;
+    float height;
 };

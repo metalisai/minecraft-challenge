@@ -12,16 +12,16 @@ in vec4 position;
 in vec4 color;
 in vec2 uv;
 
-uniform mat4 projection;
+uniform mat4 MVP;
 
 out vec4 fragColor;
 out vec2 fragUv;
 
 void main() {
-	//gl_Position = projection*position;
+	gl_Position = MVP*position;
     //fragColor = color;
     //fragUv = uv;
-    gl_Position = position;
+    //gl_Position = position;
 })foo";
 
 const char* frag_shader_str = 
@@ -42,7 +42,7 @@ void main() {
 Shader *Renderer::defaultShader;
 Material *Renderer::defaultMaterial;
 
-Renderer::Renderer()
+Renderer::Renderer(float width, float height)
 {
     if(defaultShader == nullptr)
     {
@@ -51,6 +51,8 @@ Renderer::Renderer()
         defaultShader->addCode(Shader::CodeType::OpenGL_FragmentShader, frag_shader_str, strlen(frag_shader_str)); 
         defaultMaterial = new Material(defaultShader);
     }
+    this->width = width;
+    this->height = height;
 }
 
 void Renderer::clearScreen(Vec4 color)
@@ -116,7 +118,7 @@ static bool compile_shader(GLuint *compiledProgram, const char *vertexShader, co
 	return success;
 }
 
-void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *modelM)
+void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
 {
     // load shader if not loaded
     if(!FLAGSET(material->shader->flags, Shader::Flags::Loaded))
@@ -158,7 +160,10 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *modelM)
         mesh->flags |= Mesh::Flags::Uploaded;
         mesh->flags &= ~Mesh::Flags::Dirty;
     }
-    glUseProgram((GLuint)material->shader->renderer_handle);
+    GLuint useProgram = ((GLuint)material->shader->renderer_handle);
+    glUseProgram(useProgram);
+    GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
+    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
     glBindVertexArray((GLuint)mesh->rendererHandle);
     glDrawElements(GL_TRIANGLES, mesh->numIndices, GL_UNSIGNED_SHORT, 0);
     glBindVertexArray(0);
@@ -168,6 +173,8 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *modelM)
 void Renderer::resize(float width, float height)
 {
     glViewport(0, 0, width, height);
+    this->width = width;
+    this->height = height;
 }
 
 void Renderer::presentFrame(sf::Window *window)
