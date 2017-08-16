@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include "application.h"
 
+// day 2 start!
+
 int main(int argc, char *argv[])
 {
     Application app;
