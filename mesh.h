@@ -13,12 +13,15 @@ public:
         HasVertices = 1 << 1,
         HasIndices = 1 << 2,
         Dirty = 1 << 3,
-        Uploaded = 1 << 4
+        Uploaded = 1 << 4,
+        HasTexCoords = 1 << 5
     };
 
     Mesh();
+    ~Mesh();
     void copyVertices(const Vec3 *vertices, uint32_t count);
     void copyIndices(const uint16_t *indices, uint32_t count);
+    void copyTexCoords(const Vec2 *coords, uint32_t count);
 
     uint16_t flags;
     uint16_t numVertices;
@@ -28,5 +31,6 @@ public:
     uintptr_t rendererHandle2;
     uintptr_t rendererHandle3;
     Vec3 *vertices;
+    Vec2 *texCoords;
     uint16_t *indices;
 };

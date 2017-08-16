@@ -1,9 +1,22 @@
 #include "game.h"
 #include "renderer.h"
 #include "mesh.h"
+#include "texture.h"
 
 #include <cstdio>
 #include <SFML/Window.hpp>
+
+#define STBI_NO_JPEG
+//#define        STBI_NO_PNG
+#define        STBI_NO_BMP
+#define        STBI_NO_PSD
+#define        STBI_NO_TGA
+#define        STBI_NO_GIF
+#define        STBI_NO_HDR
+#define        STBI_NO_PIC
+#define        STBI_NO_PNM 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 Vec3 quadVerts[] =
 {
@@ -13,12 +26,22 @@ Vec3 quadVerts[] =
     {0.0f, 1.0f, 0.0f}
 };
 
+Vec2 quadTexCoords[] = 
+{
+    {0.0f, 0.0f},
+    {1.0f, 0.0f},
+    {1.0f, 1.0f},
+    {0.0f, 1.0f}
+};
+
 uint16_t quadIndices[] = 
 {
     0, 1, 2, 0, 2, 3
 };
 
 Mesh mesh;
+Texture grass;
+
 float rot;
 
 void Game::simulate(float dt)
@@ -27,12 +50,21 @@ void Game::simulate(float dt)
     {
         initialized = true;
         mesh.copyVertices(quadVerts, 4);
+        mesh.copyTexCoords(quadTexCoords, 4);
         mesh.copyIndices(quadIndices, 6);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
         mousePosLast = Vec2((float)globalPosition.x, (float)globalPosition.y);
         camRot = Vec2(0.0f, 0.0f);
+
+        // texture
+        int x,y,n;
+        unsigned char *data = stbi_load("Resources/grass.png", &x, &y, &n, 0);
+        grass.copyData(data, x, y, n);
+
+        stbi_image_free(data);
+        Renderer::defaultMaterial->addTexture("tex", &grass);
     }
 
     // TODO: input system

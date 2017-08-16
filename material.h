@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <map>
 #include "Maths/maths.h"
 
 
@@ -52,6 +53,9 @@ public:
     void setVec3(const char* name, Vec3 value);
     void setVec4(const char* name, Vec4 value);
     void setMatrix4(const char* name, const Mat4 *value);
+    void addTexture(const char* name, class Texture *tex);
 
     class Shader *shader;
+
+    std::map<std::string, class Texture*> textures;
 };

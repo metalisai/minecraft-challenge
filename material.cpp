@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdio>
 #include <algorithm>
+#include "texture.h"
 
 Shader::Shader()
 {
@@ -51,3 +52,10 @@ Material::Material(Shader *shader)
 {
     this->shader = shader;
 }
+
+void Material::addTexture(const char* name, Texture *tex)
+{
+    std::string str = name;
+    this->textures.insert(std::pair<std::string, Texture*>(name, tex)); 
+}
+
