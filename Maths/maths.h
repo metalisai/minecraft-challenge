@@ -145,6 +145,13 @@ struct Quaternion
 
 // Function declarations
 
+inline Vec2 operator += (Vec2 &l, Vec2 const &r)
+{
+	l.x += r.x;
+	l.y += r.y;
+	return l;
+}
+
 inline Vec3 operator - (Vec3 const &l, Vec3 const &r)
 {
 	return Vec3(l.x-r.x, l.y-r.y, l.z-r.z);
@@ -204,6 +211,17 @@ inline Mat4 operator * (Mat4 const &l, Mat4 const &r)
 		}
 	}
 	return ret;
+}
+
+
+inline Vec4 operator * (Mat4 const &m, Vec4 const &v)
+{
+    Vec4 ret;
+    ret.x = v.x*m.m11+v.y*m.m12+v.z*m.m13+v.w*m.m14;
+    ret.y = v.x*m.m21+v.y*m.m22+v.z*m.m23+v.w*m.m24;
+    ret.z = v.x*m.m31+v.y*m.m32+v.z*m.m33+v.w*m.m34;
+    ret.w = v.x*m.m41+v.y*m.m42+v.z*m.m43+v.w*m.m44;
+    return ret;
 }
 
 inline Mat4 operator *= (Mat4 &l, Mat4 const &r)

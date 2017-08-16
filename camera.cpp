@@ -17,7 +17,13 @@ Mat4 Camera::getViewProjectionMatrix()
     float aspect = this->targetWidth / this->targetHeight;
     Mat4 view_to_clip = Mat4::Perspective(this->FOV, aspect, this->zNear, this->zFar);
 
-    Mat4 world_to_view = Mat4::TRS(-1.0f * this->transform.position, this->transform.rotation.inverse(), Vec3(1.0f, 1.0f, 1.0f));
+    Mat4 rotate = Mat4::Rotation(this->transform.rotation.inverse());
+    Mat4 translate = Mat4::Identity();
+    translate.m14 = -transform.position.x;
+    translate.m24 = -transform.position.y;
+    translate.m34 = -transform.position.z;
+
+    Mat4 world_to_view = rotate * translate;
     return view_to_clip*world_to_view;
 }
 
