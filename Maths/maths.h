@@ -239,7 +239,7 @@ inline Mat4 Mat4::Perspective(float fov, float aspect, float zNear, float zFar)
 {
 	Mat4 ret;
 	const float h = 1.0f / (float)tan(fov*TUT_DEG2RAD_F*0.5f);
-	float neg_depth = zNear - zFar;
+	float depth = zFar - zNear;
 
 	// row 1
 	ret.m11 = h / aspect;
@@ -254,12 +254,12 @@ inline Mat4 Mat4::Perspective(float fov, float aspect, float zNear, float zFar)
 
 	ret.m31 = 0.0f;
 	ret.m32 = 0.0f;
-	ret.m33 = (zFar + zNear) / neg_depth;
-	ret.m34 = 2.0f*(zNear*zFar) / neg_depth;
+	ret.m33 = -2.0f / depth;
+	ret.m34 = -((zFar+zNear)/depth);
 
 	ret.m41 = 0.0f;
 	ret.m42 = 0.0f;
-	ret.m43 = -1.0f;
+	ret.m43 = 1.0f;
 	ret.m44 = 0.0f;
 
 	return ret;

@@ -45,9 +45,9 @@ Mesh *chunkMesh;
 Texture *grass;
 TextureArray *atlas;
 
-Block grassBlock;
-
-WorldGenerator worldGen;
+//Block grassBlock;
+BlockStore bs;
+WorldGenerator worldGen(&bs);
 
 float rot;
 
@@ -59,8 +59,6 @@ void Game::simulate(float dt)
         mesh.copyVertices(quadVerts, 4);
         mesh.copyTexCoords(quadTexCoords, 4);
         mesh.copyIndices(quadIndices, 6);
-
-        chunkMesh = worldGen.generateChunk(Vec3(-10.0f, -10.0f, -10.0f), 20);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
@@ -89,7 +87,27 @@ void Game::simulate(float dt)
         Renderer::defaultMaterial->addTexture("tex", grass);
         Renderer::defaultMaterial->addTextureArray("texArr", atlas);
 
+        Block dirt, grass;
+        dirt.name = "Dirt";
+        dirt.faceTextureLayers[0] = 0;
+        dirt.faceTextureLayers[1] = 0;
+        dirt.faceTextureLayers[2] = 0;
+        dirt.faceTextureLayers[3] = 0;
+        dirt.faceTextureLayers[4] = 0;
+        dirt.faceTextureLayers[5] = 0;
 
+        grass.name = "Grass";
+        grass.faceTextureLayers[0] = 1;
+        grass.faceTextureLayers[1] = 1;
+        grass.faceTextureLayers[2] = 2;
+        grass.faceTextureLayers[3] = 0;
+        grass.faceTextureLayers[4] = 1;
+        grass.faceTextureLayers[5] = 1;
+
+        bs.createBlock(1, dirt);
+        bs.createBlock(2, grass);
+
+        chunkMesh = worldGen.generateChunk(Vec3(-10.0f, -10.0f, -10.0f), 20);
     }
 
     // TODO: input system
@@ -97,11 +115,11 @@ void Game::simulate(float dt)
     const float rotSpeed = 0.4f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
-        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
+        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
     {
-        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
+        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
     {
@@ -120,8 +138,8 @@ void Game::simulate(float dt)
     //camRot.x = fmod(camRot.x, 360.0f);
     //camRot.y = fmod(camRot.y, 360.0f);
 
-    Quaternion rotX = Quaternion::AngleAxis(rotSpeed * -camRot.x, Vec3(0.0f, 1.0f, 0.0f));
-    Quaternion rotY = Quaternion::AngleAxis(rotSpeed * -camRot.y, Vec3(1.0f, 0.0f, 0.0f));
+    Quaternion rotX = Quaternion::AngleAxis(rotSpeed * camRot.x, Vec3(0.0f, 1.0f, 0.0f));
+    Quaternion rotY = Quaternion::AngleAxis(rotSpeed * camRot.y, Vec3(1.0f, 0.0f, 0.0f));
     this->mainCam.transform.rotation = rotX * rotY;
 
     rot += 1.0f;

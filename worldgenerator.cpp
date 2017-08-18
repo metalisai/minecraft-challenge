@@ -11,14 +11,15 @@ namespace
     extern uint16_t quadIndices[6]; 
 }
 
-WorldGenerator::WorldGenerator()
+WorldGenerator::WorldGenerator(BlockStore *blockStore)
 {
+    this->blockStore = blockStore;
 }
 
 int getBlockId(Vec3 position)
 {
-    if(position.length() < 10.0f)
-        return 1;
+    if(position.length() >= 10.0f)
+        return 2;
     else
         return 0;
 }
@@ -41,11 +42,13 @@ Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
         int blockId = getBlockId(localOffset);
         bool blockEmpty = blockId == 0;
         
-        int rightBlockId = getBlockId(localOffset + sideOffsets[0]);
-        bool rightEmpty = rightBlockId == 0;
+        Block *block = blockStore->getBlock(blockId);
+
         for(int dir = 0; dir < 3; dir++)
         {
-            bool dirEmpty = getBlockId(localOffset + sideOffsets[dir*2]) == 0;
+            int dirBlockId = getBlockId(localOffset + directions[dir]);
+            Block *dirBlock = blockStore->getBlock(dirBlockId);
+            bool dirEmpty = dirBlockId == 0;
             if(blockEmpty != dirEmpty)
             {
                 int firstIndex = vertCount;
@@ -53,11 +56,14 @@ Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
                 {
                     vertices[vertCount] = localOffset + sideQuads[dir][vert] + directions[dir];
                     texCoords[vertCount] = sideTexCoords[dir][vert];
+                    texCoords[vertCount].z = blockEmpty ? dirBlock->faceTextureLayers[dir*2 + 1] 
+                        : block->faceTextureLayers[dir*2];
                     vertCount++;
                 }
                 for(int idx = 0; idx < 6; idx++)
                 {
-                    indices[indexCount] = firstIndex + quadIndices[idx];
+                    int vertIdx = blockEmpty ? 5 - idx : idx;
+                    indices[indexCount] = firstIndex + quadIndices[vertIdx];
                     indexCount++;
                 }
             }
@@ -73,16 +79,6 @@ Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
 
 namespace
 {
-    Vec3 sideOffsets[6] = 
-    {
-        { 1.0f,  0.0f,  0.0f}, // right
-        {-1.0f,  0.0f,  0.0f}, // left
-        { 0.0f,  1.0f,  0.0f}, // top
-        { 0.0f, -1.0f,  0.0f}, // bottom
-        { 0.0f,  0.0f,  1.0f}, // front
-        { 0.0f,  0.0f, -1.0f}, // back
-    };
-
     Vec3 directions [3] =
     {
         {1.0f, 0.0f, 0.0f},
@@ -105,10 +101,10 @@ namespace
             {0.0f, 0.0f, 1.0f}
         },
         { // front/back
-            {0.0f, 0.0f, 0.0f},
             {1.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f}
+            {0.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f}
         }
     };
 
@@ -127,10 +123,10 @@ namespace
             {0.0f, 1.0f, 0.0f}
         },
         { // front/back
-            {0.0f, 0.0f, 0.0f},
             {1.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f}
+            {0.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f}
         }
     };
 
