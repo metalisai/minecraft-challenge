@@ -110,8 +110,8 @@ void Game::render(Renderer *renderer)
     Mat4 world_to_clip = mainCam.getViewProjectionMatrix();
 
     Quaternion rotQ = Quaternion::AngleAxis(rot, Vec3(0.0f, 1.0f, 0.0f));
-    //Mat4 model_to_world = Mat4::Rotation(rotQ);
-    Mat4 model_to_world = Mat4::Identity();
+    Mat4 model_to_world = Mat4::Rotation(rotQ);
+    //Mat4 model_to_world = Mat4::Identity();
 
     Mat4 model_to_clip = world_to_clip * model_to_world;
     //Mat4 model_to_clip = Mat4::Identity();
