@@ -78,7 +78,7 @@ void Mesh::copyIndices(const uint16_t *indices, uint32_t count)
     this->numIndices = count;
 }
 
-void Mesh::copyTexCoords(const Vec2 *coords, uint32_t count)
+void Mesh::copyTexCoords(const Vec3 *coords, uint32_t count)
 {
     if(FLAGSET(this->flags, Flags::HasTexCoords) && count != this->numVertices)
     {
@@ -87,9 +87,9 @@ void Mesh::copyTexCoords(const Vec2 *coords, uint32_t count)
     }
     if(!FLAGSET(this->flags, Flags::HasTexCoords))
     {
-        this->texCoords = new Vec2[count];
+        this->texCoords = new Vec3[count];
     }
-    memcpy(this->texCoords, coords, sizeof(Vec2)*count);
+    memcpy(this->texCoords, coords, sizeof(Vec3)*count);
     this->flags |= Flags::HasTexCoords;
     this->flags |= Flags::Dirty;
 }

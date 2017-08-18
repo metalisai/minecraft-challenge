@@ -10,13 +10,13 @@
 const char* vertex_shader_str = 
 R"foo(#version 130
 in vec4 position; 
-in vec2 uv;
+in vec3 uv;
 in vec4 color;
 
 uniform mat4 MVP;
 
 out vec4 fragColor;
-out vec2 fragUv;
+out vec3 fragUv;
 
 void main() {
 	gl_Position = MVP*position;
@@ -30,13 +30,16 @@ R"foo(#version 130
 out vec4 outColor;
 
 in vec4 fragColor;
-in vec2 fragUv;
+in vec3 fragUv;
 
 uniform sampler2D tex;
+uniform sampler2DArray texArr;
 
 void main() {
-    vec2 uv = vec2(fragUv.x, 1.0f - fragUv.y);
-    outColor = texture(tex, uv);
+    //vec2 uv = vec2(fragUv.x, 1.0f - fragUv.y);
+    vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
+    //outColor = texture(tex, uv);
+    outColor = texture(texArr, uv3);
 })foo";
 
 Shader *Renderer::defaultShader;
@@ -131,27 +134,37 @@ void Renderer::checkTexture(Texture *texture)
         GLuint gltex;
         glGenTextures(1, &gltex);
         glBindTexture(GL_TEXTURE_2D, gltex);
-        if(texture->components == 3)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGB,
+        assert(texture->components == 3 || texture->components == 4);
+        GLuint format = texture->components == 3 ? GL_RGB : GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, format,
                     GL_UNSIGNED_BYTE, texture->data);
-
-        }
-        else if(texture->components == 4)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture->width, texture->height, 0, GL_RGBA,
-                    GL_UNSIGNED_BYTE, texture->data);
-        }
-        else
-        {
-            fprintf(stderr, "Renderer doesn't support component count: %d\n", texture->components);
-        }
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
         texture->flags |= Texture::Flags::Uploaded;
         texture->renderer_handle = gltex;
+    }
+}
+
+void Renderer::checkTextureArray(TextureArray *texarr)
+{
+    assert(FLAGSET(texarr->flags, Texture::Flags::HasData));
+    if(!FLAGSET(texarr->flags, Texture::Flags::Uploaded))
+    {
+        GLuint gltex;
+        glGenTextures(1, &gltex);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, gltex);
+        glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, texarr->width, texarr->height, texarr->layers);
+        assert(texarr->components == 3 || texarr->components == 4);
+        GLuint format = texarr->components == 3 ? GL_RGB : GL_RGBA;
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, texarr->width, texarr->height, texarr->layers, format, GL_UNSIGNED_BYTE, texarr->data);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+        texarr->flags |= Texture::Flags::Uploaded;
+        texarr->renderer_handle = gltex;
     }
 }
 
@@ -182,7 +195,7 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
         vbufsize += mesh->numVertices*sizeof(Vec3);
         if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
         {
-            vbufsize += mesh->numVertices*sizeof(Vec2);
+            vbufsize += mesh->numVertices*sizeof(Vec3);
         }
 
         // TODO: replace assert with logging an error?
@@ -205,10 +218,10 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
         // copy texture coordinates 
         if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
         {
-            glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec2), (GLvoid*)mesh->texCoords);
+            glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->texCoords);
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
-            offset += mesh->numVertices*sizeof(Vec2);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
+            offset += mesh->numVertices*sizeof(Vec3);
             //printf("Set Tex coords\n");
         }
 
@@ -236,6 +249,16 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
         glBindTexture(GL_TEXTURE_2D, (GLuint)it->second->renderer_handle);
         texUnit++;
     }
+    for (auto it = material->textureArrays.begin(); it != material->textureArrays.end(); ++it)
+    {
+        checkTextureArray(it->second);
+        GLuint texLoc = glGetUniformLocation(useProgram, it->first.c_str());
+        glUniform1i(texLoc, texUnit);
+        glActiveTexture(GL_TEXTURE0 + texUnit);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, (GLuint)it->second->renderer_handle);
+        texUnit++;
+    }
+
 
     glBindVertexArray((GLuint)mesh->rendererHandle);
     glDrawElements(GL_TRIANGLES, mesh->numIndices, GL_UNSIGNED_SHORT, 0);

@@ -2,6 +2,15 @@
 
 #include "mesh.h"
 
+namespace
+{
+    extern Vec3 sideOffsets[6];
+    extern Vec3 sideQuads[3][4];
+    extern Vec3 directions[3];
+    extern Vec3 sideTexCoords[3][4];
+    extern uint16_t quadIndices[6]; 
+}
+
 WorldGenerator::WorldGenerator()
 {
 }
@@ -14,76 +23,11 @@ int getBlockId(Vec3 position)
         return 0;
 }
 
-Vec3 sideOffsets[] = 
-{
-    { 1.0f,  0.0f,  0.0f}, // right
-    {-1.0f,  0.0f,  0.0f}, // left
-    { 0.0f,  1.0f,  0.0f}, // top
-    { 0.0f, -1.0f,  0.0f}, // bottom
-    { 0.0f,  0.0f,  1.0f}, // front
-    { 0.0f,  0.0f, -1.0f}, // back
-};
-
-Vec3 directions [] =
-{
-    {1.0f, 0.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f},
-    {0.0f, 0.0f, 1.0f}
-};
-
-Vec3 sideQuads[][4] =
-{
-    { // right/left
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f},
-        {0.0f, 1.0f, 1.0f},
-        {0.0f, 1.0f, 0.0f}
-    },
-    { // top/bottom
-        {0.0f, 0.0f, 0.0f},
-        {1.0f, 0.0f, 0.0f},
-        {1.0f, 0.0f, 1.0f},
-        {0.0f, 0.0f, 1.0f}
-    },
-    { // front/back
-        {0.0f, 0.0f, 0.0f},
-        {1.0f, 0.0f, 0.0f},
-        {1.0f, 1.0f, 0.0f},
-        {0.0f, 1.0f, 0.0f}
-    }
-};
-
-Vec2 sideTexCoords [][4] =
-{
-    { // right/left
-        {0.0f, 0.0f},
-        {1.0f, 0.0f},
-        {1.0f, 1.0f},
-        {0.0f, 1.0f}
-    },
-    { // top/bottom
-        {0.0f, 0.0f},
-        {1.0f, 0.0f},
-        {1.0f, 1.0f},
-        {0.0f, 1.0f}
-    },
-    { // front/back
-        {0.0f, 0.0f},
-        {1.0f, 0.0f},
-        {1.0f, 1.0f},
-        {0.0f, 1.0f}
-    }
-};
-
-static uint16_t quadIndices[] = 
-{
-    0, 1, 2, 0, 2, 3
-};
 
 Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
 {
     Vec3 vertices[65536];
-    Vec2 texCoords[65536];
+    Vec3 texCoords[65536];
     uint16_t indices[65536];
     int vertCount = 0;
     int indexCount = 0;
@@ -126,3 +70,73 @@ Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
     ret->copyIndices(indices, indexCount);
     return ret;
 }
+
+namespace
+{
+    Vec3 sideOffsets[6] = 
+    {
+        { 1.0f,  0.0f,  0.0f}, // right
+        {-1.0f,  0.0f,  0.0f}, // left
+        { 0.0f,  1.0f,  0.0f}, // top
+        { 0.0f, -1.0f,  0.0f}, // bottom
+        { 0.0f,  0.0f,  1.0f}, // front
+        { 0.0f,  0.0f, -1.0f}, // back
+    };
+
+    Vec3 directions [3] =
+    {
+        {1.0f, 0.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f}
+    };
+
+    Vec3 sideQuads[3][4] =
+    {
+        { // right/left
+            {0.0f, 0.0f, 0.0f},
+            {0.0f, 0.0f, 1.0f},
+            {0.0f, 1.0f, 1.0f},
+            {0.0f, 1.0f, 0.0f}
+        },
+        { // top/bottom
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 1.0f},
+            {0.0f, 0.0f, 1.0f}
+        },
+        { // front/back
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f}
+        }
+    };
+
+    Vec3 sideTexCoords [3][4] =
+    {
+        { // right/left
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f}
+        },
+        { // top/bottom
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f}
+        },
+        { // front/back
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f}
+        }
+    };
+
+    uint16_t quadIndices[6] = 
+    {
+        0, 1, 2, 0, 2, 3
+    };
+}
+

@@ -21,7 +21,7 @@ public:
     ~Mesh();
     void copyVertices(const Vec3 *vertices, uint32_t count);
     void copyIndices(const uint16_t *indices, uint32_t count);
-    void copyTexCoords(const Vec2 *coords, uint32_t count);
+    void copyTexCoords(const Vec3 *coords, uint32_t count);
 
     uint16_t flags;
     uint16_t numVertices;
@@ -31,6 +31,6 @@ public:
     uintptr_t rendererHandle2;
     uintptr_t rendererHandle3;
     Vec3 *vertices;
-    Vec2 *texCoords;
+    Vec3 *texCoords;
     uint16_t *indices;
 };

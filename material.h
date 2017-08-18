@@ -54,8 +54,10 @@ public:
     void setVec4(const char* name, Vec4 value);
     void setMatrix4(const char* name, const Mat4 *value);
     void addTexture(const char* name, class Texture *tex);
+    void addTextureArray(const char* name, class TextureArray *texArr);
 
     class Shader *shader;
 
     std::map<std::string, class Texture*> textures;
+    std::map<std::string, class TextureArray*> textureArrays;
 };

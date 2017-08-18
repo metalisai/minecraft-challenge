@@ -27,12 +27,12 @@ static Vec3 quadVerts[] =
     {0.0f, 1.0f, 0.0f}
 };
 
-static Vec2 quadTexCoords[] = 
+static Vec3 quadTexCoords[] = 
 {
-    {0.0f, 0.0f},
-    {1.0f, 0.0f},
-    {1.0f, 1.0f},
-    {0.0f, 1.0f}
+    {0.0f, 0.0f, 0.0f},
+    {1.0f, 0.0f, 0.0f},
+    {1.0f, 1.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f}
 };
 
 static uint16_t quadIndices[] = 
@@ -42,7 +42,10 @@ static uint16_t quadIndices[] =
 
 Mesh mesh;
 Mesh *chunkMesh;
-Texture grass;
+Texture *grass;
+TextureArray *atlas;
+
+Block grassBlock;
 
 WorldGenerator worldGen;
 
@@ -67,30 +70,46 @@ void Game::simulate(float dt)
         // texture
         int x,y,n;
         unsigned char *data = stbi_load("Resources/grass.png", &x, &y, &n, 0);
-        grass.copyData(data, x, y, n);
+        grass = new Texture(x, y, n);
+        grass->copyData(data, x, y, n);
+        
+        atlas = new TextureArray(16, 16, n, 255);
+        //atlas->copyLayer(data, x, y, n, 0);
 
         stbi_image_free(data);
-        Renderer::defaultMaterial->addTexture("tex", &grass);
+        data = stbi_load("Resources/dirt.png", &x, &y, &n, 0);
+        atlas->copyLayer(data, x, y, n, 0);
+        stbi_image_free(data);
+        data = stbi_load("Resources/grass-side.png", &x, &y, &n, 0);
+        atlas->copyLayer(data, x, y, n, 1);
+        stbi_image_free(data);
+        data = stbi_load("Resources/grass-top.png", &x, &y, &n, 0);
+        atlas->copyLayer(data, x, y, n, 2);
+        stbi_image_free(data);
+        Renderer::defaultMaterial->addTexture("tex", grass);
+        Renderer::defaultMaterial->addTextureArray("texArr", atlas);
+
+
     }
 
     // TODO: input system
-    const float moveSpeed = 1.0f;
+    const float moveSpeed = 3.0f;
     const float rotSpeed = 0.4f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
-        this->mainCam.transform.position += dt*mainCam.transform.forward();
+        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
     {
-        this->mainCam.transform.position -= dt*mainCam.transform.forward();
+        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
     {
-        this->mainCam.transform.position -= dt*mainCam.transform.right();
+        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.right();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
     {
-        this->mainCam.transform.position += dt*mainCam.transform.right();
+        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.right();
     }
 
     // get the global mouse position (relative to the desktop)

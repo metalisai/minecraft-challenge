@@ -59,3 +59,9 @@ void Material::addTexture(const char* name, Texture *tex)
     this->textures.insert(std::pair<std::string, Texture*>(name, tex)); 
 }
 
+void Material::addTextureArray(const char* name, TextureArray *texArr)
+{
+    std::string str = name;
+    this->textureArrays.insert(std::pair<std::string, TextureArray*>(name, texArr));
+}
+
