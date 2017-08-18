@@ -41,6 +41,11 @@ public:
 		return l.x*r.x + l.y*r.y + l.z*r.z;
 	}
 
+    float length()
+    {
+        return sqrtf(x*x + y*y + z*z);
+    }
+
 	float x, y, z;
 };
 

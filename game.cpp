@@ -2,6 +2,7 @@
 #include "renderer.h"
 #include "mesh.h"
 #include "texture.h"
+#include "worldgenerator.h"
 
 #include <cstdio>
 #include <SFML/Window.hpp>
@@ -18,7 +19,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-Vec3 quadVerts[] =
+static Vec3 quadVerts[] =
 {
     {0.0f, 0.0f, 0.0f},
     {1.0f, 0.0f, 0.0f},
@@ -26,7 +27,7 @@ Vec3 quadVerts[] =
     {0.0f, 1.0f, 0.0f}
 };
 
-Vec2 quadTexCoords[] = 
+static Vec2 quadTexCoords[] = 
 {
     {0.0f, 0.0f},
     {1.0f, 0.0f},
@@ -34,13 +35,16 @@ Vec2 quadTexCoords[] =
     {0.0f, 1.0f}
 };
 
-uint16_t quadIndices[] = 
+static uint16_t quadIndices[] = 
 {
     0, 1, 2, 0, 2, 3
 };
 
 Mesh mesh;
+Mesh *chunkMesh;
 Texture grass;
+
+WorldGenerator worldGen;
 
 float rot;
 
@@ -52,6 +56,8 @@ void Game::simulate(float dt)
         mesh.copyVertices(quadVerts, 4);
         mesh.copyTexCoords(quadTexCoords, 4);
         mesh.copyIndices(quadIndices, 6);
+
+        chunkMesh = worldGen.generateChunk(Vec3(-10.0f, -10.0f, -10.0f), 20);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
@@ -114,8 +120,11 @@ void Game::render(Renderer *renderer)
     //Mat4 model_to_world = Mat4::Identity();
 
     Mat4 model_to_clip = world_to_clip * model_to_world;
+
+    //Mat4 chunkmodel_to_clip = world_to_clip;
     //Mat4 model_to_clip = Mat4::Identity();
 
     renderer->clearScreen(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
     renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_clip);
+    renderer->renderMesh(chunkMesh, renderer->defaultMaterial, &world_to_clip);
 }

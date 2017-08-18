@@ -1,0 +1,128 @@
+#include "worldgenerator.h"
+
+#include "mesh.h"
+
+WorldGenerator::WorldGenerator()
+{
+}
+
+int getBlockId(Vec3 position)
+{
+    if(position.length() < 10.0f)
+        return 1;
+    else
+        return 0;
+}
+
+Vec3 sideOffsets[] = 
+{
+    { 1.0f,  0.0f,  0.0f}, // right
+    {-1.0f,  0.0f,  0.0f}, // left
+    { 0.0f,  1.0f,  0.0f}, // top
+    { 0.0f, -1.0f,  0.0f}, // bottom
+    { 0.0f,  0.0f,  1.0f}, // front
+    { 0.0f,  0.0f, -1.0f}, // back
+};
+
+Vec3 directions [] =
+{
+    {1.0f, 0.0f, 0.0f},
+    {0.0f, 1.0f, 0.0f},
+    {0.0f, 0.0f, 1.0f}
+};
+
+Vec3 sideQuads[][4] =
+{
+    { // right/left
+        {0.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 1.0f},
+        {0.0f, 1.0f, 1.0f},
+        {0.0f, 1.0f, 0.0f}
+    },
+    { // top/bottom
+        {0.0f, 0.0f, 0.0f},
+        {1.0f, 0.0f, 0.0f},
+        {1.0f, 0.0f, 1.0f},
+        {0.0f, 0.0f, 1.0f}
+    },
+    { // front/back
+        {0.0f, 0.0f, 0.0f},
+        {1.0f, 0.0f, 0.0f},
+        {1.0f, 1.0f, 0.0f},
+        {0.0f, 1.0f, 0.0f}
+    }
+};
+
+Vec2 sideTexCoords [][4] =
+{
+    { // right/left
+        {0.0f, 0.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+        {0.0f, 1.0f}
+    },
+    { // top/bottom
+        {0.0f, 0.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+        {0.0f, 1.0f}
+    },
+    { // front/back
+        {0.0f, 0.0f},
+        {1.0f, 0.0f},
+        {1.0f, 1.0f},
+        {0.0f, 1.0f}
+    }
+};
+
+static uint16_t quadIndices[] = 
+{
+    0, 1, 2, 0, 2, 3
+};
+
+Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
+{
+    Vec3 vertices[65536];
+    Vec2 texCoords[65536];
+    uint16_t indices[65536];
+    int vertCount = 0;
+    int indexCount = 0;
+
+    for(int i = 0; i < size; i++)
+    for(int j = 0; j < size; j++)
+    for(int k = 0; k < size; k++)
+    {
+        Vec3 localOffset(i, j, k);
+        localOffset += offset;
+        int blockId = getBlockId(localOffset);
+        bool blockEmpty = blockId == 0;
+        
+        int rightBlockId = getBlockId(localOffset + sideOffsets[0]);
+        bool rightEmpty = rightBlockId == 0;
+        for(int dir = 0; dir < 3; dir++)
+        {
+            bool dirEmpty = getBlockId(localOffset + sideOffsets[dir*2]) == 0;
+            if(blockEmpty != dirEmpty)
+            {
+                int firstIndex = vertCount;
+                for(int vert = 0; vert < 4; vert++)
+                {
+                    vertices[vertCount] = localOffset + sideQuads[dir][vert] + directions[dir];
+                    texCoords[vertCount] = sideTexCoords[dir][vert];
+                    vertCount++;
+                }
+                for(int idx = 0; idx < 6; idx++)
+                {
+                    indices[indexCount] = firstIndex + quadIndices[idx];
+                    indexCount++;
+                }
+            }
+        }
+    }
+
+    Mesh *ret = new Mesh();
+    ret->copyVertices(vertices, vertCount);
+    ret->copyTexCoords(texCoords, vertCount);
+    ret->copyIndices(indices, indexCount);
+    return ret;
+}

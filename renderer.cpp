@@ -53,12 +53,15 @@ Renderer::Renderer(float width, float height)
     }
     this->width = width;
     this->height = height;
+
+    glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::clearScreen(Vec4 color)
 {
     glClearColor(color.r, color.g, color.b, color.a);
     glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 bool CheckShaderCompileStatus(const char *sname, GLint shader)
