@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Maths/maths.h"
+#include "../Maths/maths.h"
 #include <stdint.h>
 
 class Mesh

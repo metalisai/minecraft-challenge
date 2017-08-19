@@ -1,6 +1,6 @@
 #include "texture.h"
 
-#include "macros.h"
+#include "../macros.h"
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>

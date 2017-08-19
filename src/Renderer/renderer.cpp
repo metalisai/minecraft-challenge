@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "mesh.h"
 #include "texture.h"
-#include "macros.h"
+#include "../macros.h"
 
 const char* vertex_shader_str = 
 R"foo(#version 130

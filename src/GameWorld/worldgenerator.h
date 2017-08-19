@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Maths/maths.h"
-#include "macros.h"
+#include "../Maths/maths.h"
+#include "../macros.h"
 
 class WorldGenerator
 {

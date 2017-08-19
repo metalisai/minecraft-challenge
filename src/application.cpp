@@ -1,7 +1,7 @@
 #include "application.h"
 
 #include <SFML/Graphics.hpp>
-#include "renderer.h"
+#include "Renderer/renderer.h"
 #include "game.h"
 
 Application::Application()

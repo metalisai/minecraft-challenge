@@ -1,8 +1,8 @@
 #include "game.h"
-#include "renderer.h"
-#include "mesh.h"
-#include "texture.h"
-#include "worldgenerator.h"
+#include "Renderer/renderer.h"
+#include "Renderer/mesh.h"
+#include "Renderer/texture.h"
+#include "GameWorld/worldgenerator.h"
 
 #include <cstdio>
 #include <SFML/Window.hpp>
@@ -17,7 +17,7 @@
 #define        STBI_NO_PIC
 #define        STBI_NO_PNM 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "Libs/stb_image.h"
 
 static Vec3 quadVerts[] =
 {

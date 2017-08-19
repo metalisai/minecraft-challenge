@@ -1,5 +1,5 @@
 #include <GL/glew.h>
-#include "Maths/maths.h"
+#include "../Maths/maths.h"
 #include "material.h"
 
 namespace sf

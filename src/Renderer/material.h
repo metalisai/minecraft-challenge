@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <map>
-#include "Maths/maths.h"
+#include "../Maths/maths.h"
 
 
 class Shader

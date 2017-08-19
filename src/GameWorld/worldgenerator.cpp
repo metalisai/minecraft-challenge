@@ -1,6 +1,6 @@
 #include "worldgenerator.h"
 
-#include "mesh.h"
+#include "../Renderer/mesh.h"
 
 namespace
 {
