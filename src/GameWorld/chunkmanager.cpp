@@ -21,25 +21,27 @@ ChunkManager::~ChunkManager()
 void ChunkManager::loadChunk(IVec3 chunkId)
 {
     Chunk *chunk;
-    chunk = new Chunk(blockStore, world, Vec3(-10.0f, -10.0f, -10.0f), 20);
+    chunk = new Chunk(blockStore, world, Vec3(chunkId.x, chunkId.y, chunkId.z), 16);
     chunk->regenerateMesh();
     loadedChunks.insert({chunkId, chunk});
 }
 
-void ChunkManager::blockChanged(IVec3 block)
+void ChunkManager::blockDirty(IVec3 block)
 {
-    //IVec3 chunkId = Chunk::getChunkId(block);
-    IVec3 chunkId(-10, -10, -10);
-
+    IVec3 chunkId = Chunk::getChunkId(block);
     auto fchunk = loadedChunks.find(chunkId);
     if(fchunk != loadedChunks.end())
     {
         fchunk->second->flags |= Chunk::Flags::Dirty;
     }
-    else
-    {
-        // not found
-    }
+}
+
+void ChunkManager::blockChanged(IVec3 block)
+{
+    blockDirty(block + IVec3(-1, 0, 0));
+    blockDirty(block + IVec3(0, -1, 0));
+    blockDirty(block + IVec3(0, 0, -1));
+    blockDirty(block);
 }
 
 void ChunkManager::update()

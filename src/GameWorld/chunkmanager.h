@@ -10,6 +10,7 @@ public:
     ~ChunkManager();
 
     void loadChunk(IVec3 chunkId);
+    void blockDirty(IVec3 block);
     void blockChanged(IVec3 block);
     void update();
     void render();

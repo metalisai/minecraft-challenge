@@ -7,7 +7,13 @@ World::World(Renderer *renderer, BlockStore *blockStore, Camera *cam)
     : chunkManager(renderer, cam, blockStore, this)
 {
     this->mainCam = cam;
-    chunkManager.loadChunk(IVec3(-10, -10, -10));
+
+    for(int i = -1; i < 2; i++)
+    for(int j = -1; j < 2; j++)
+    {
+        chunkManager.loadChunk(IVec3(i*16, j*16, -16));
+        chunkManager.loadChunk(IVec3(i*16, j*16, 0));
+    }
 }
 
 World::~World()

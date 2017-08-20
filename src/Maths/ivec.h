@@ -23,6 +23,15 @@ struct IVec3
     int x,y,z;
 };
 
+inline IVec3 operator + (IVec3 const &l, IVec3 const &r)
+{
+    IVec3 ret;
+    ret.x = l.x + r.x;
+    ret.y = l.y + r.y;
+    ret.z = l.z + r.z;
+    return ret;
+}
+
 namespace std
 {
     template<> struct less<IVec3>
