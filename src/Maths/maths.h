@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math.h>
+#include "ivec.h"
 #define TUT_DEG2RAD_F 0.0174532925f
 
 // Data structures
@@ -44,6 +45,15 @@ public:
     float length()
     {
         return sqrtf(x*x + y*y + z*z);
+    }
+
+    Vec3 normalized()
+    {
+        Vec3 ret = *this;
+        ret.x /= length();
+        ret.y /= length();
+        ret.z /= length();
+        return ret;
     }
 
 	float x, y, z;
@@ -198,6 +208,14 @@ inline Vec3 operator *= (Vec3 &l, float r)
     l.x *= r;
     l.y *= r;
     l.z *= r;
+    return l;
+}
+
+inline Vec3 operator /= (Vec3 &l, float r)
+{
+    l.x /= r;
+    l.y /= r;
+    l.z /= r;
     return l;
 }
 

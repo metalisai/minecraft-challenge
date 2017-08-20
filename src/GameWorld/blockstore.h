@@ -1,19 +1,6 @@
-#pragma once
-
-#include "../Maths/maths.h"
-#include "../macros.h"
-
-class WorldGenerator
-{
-public:
-    WorldGenerator(class BlockStore *blockStore);
-    class Mesh* generateChunk(Vec3 offset, int size);
-
-    class BlockStore *blockStore;
-};
-
 #include <map>
 #include <assert.h>
+#include "../macros.h"
 
 // 0 - right face
 // 1 - left face

@@ -1,6 +1,11 @@
-#include "worldgenerator.h"
+#include "chunk.h"
+#include "../macros.h"
 
+#include <assert.h>
 #include "../Renderer/mesh.h"
+#include "blockstore.h"
+#include "world.h"
+#include <cstring>
 
 namespace
 {
@@ -11,42 +16,66 @@ namespace
     extern uint16_t quadIndices[6]; 
 }
 
-WorldGenerator::WorldGenerator(BlockStore *blockStore)
+Chunk::Chunk(BlockStore *blockStore, class World *world, Vec3 offset, int size)
 {
+    this->flags = 0;
+    this->offset = offset;
+    printf("%f %f %f\n", offset.x, offset.y, offset.z);
+    this->size = size;
+
+    this->mesh = nullptr;
     this->blockStore = blockStore;
+    this->world = world;
 }
 
-int getBlockId(Vec3 position)
+Chunk::~Chunk()
 {
-    if(position.length() >= 10.0f)
-        return 2;
+    if(FLAGSET(this->flags, Flags::HasMesh))
+        delete this->mesh;
+}
+
+IVec3 Chunk::getChunkId(IVec3 block)
+{
+    IVec3 ret;
+    ret.x = ((int)floor(block.x / (float)CHUNK_STORE_SIZE)) * CHUNK_STORE_SIZE;
+    ret.y = ((int)floor(block.y / (float)CHUNK_STORE_SIZE)) * CHUNK_STORE_SIZE;
+    ret.z = ((int)floor(block.z / (float)CHUNK_STORE_SIZE)) * CHUNK_STORE_SIZE;
+    return ret;
+}
+
+void Chunk::regenerateMesh()
+{
+    Mesh* mesh;
+    if(FLAGSET(this->flags, Flags::HasMesh))
+        mesh = this->mesh;
     else
-        return 0;
-}
+    {
+        mesh = new Mesh();
+        this->mesh = mesh;
+    }
 
-
-Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
-{
+    // TODO: regenerate mesh
     Vec3 vertices[65536];
     Vec3 texCoords[65536];
     uint16_t indices[65536];
     int vertCount = 0;
     int indexCount = 0;
 
+    int size = this->size;
     for(int i = 0; i < size; i++)
     for(int j = 0; j < size; j++)
     for(int k = 0; k < size; k++)
     {
         Vec3 localOffset(i, j, k);
-        localOffset += offset;
-        int blockId = getBlockId(localOffset);
+        IVec3 blockV((int)offset.x+i, (int)offset.y+j, (int)offset.z+k);
+        int blockId = world->getBlockId(blockV);
         bool blockEmpty = blockId == 0;
         
         Block *block = blockStore->getBlock(blockId);
 
         for(int dir = 0; dir < 3; dir++)
         {
-            int dirBlockId = getBlockId(localOffset + directions[dir]);
+            uint8_t dirBlockId = world->getBlockId(IVec3(blockV.x+(int)directions[dir].x, blockV.y+(int)directions[dir].y, blockV.z+(int)directions[dir].z));
             Block *dirBlock = blockStore->getBlock(dirBlockId);
             bool dirEmpty = dirBlockId == 0;
             if(blockEmpty != dirEmpty)
@@ -70,11 +99,12 @@ Mesh* WorldGenerator::generateChunk(Vec3 offset, int size)
         }
     }
 
-    Mesh *ret = new Mesh();
-    ret->copyVertices(vertices, vertCount);
-    ret->copyTexCoords(texCoords, vertCount);
-    ret->copyIndices(indices, indexCount);
-    return ret;
+    mesh->copyVertices(vertices, vertCount);
+    mesh->copyTexCoords(texCoords, vertCount);
+    mesh->copyIndices(indices, indexCount);
+
+    this->flags |= Flags::HasMesh;
+    this->flags &= ~Flags::Dirty;
 }
 
 namespace

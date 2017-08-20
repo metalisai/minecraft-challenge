@@ -15,7 +15,7 @@ Mat4 Transform::getModelMatrix()
 Vec3 Transform::forward()
 {
     Mat4 rot = Mat4::Rotation(this->rotation);
-    Vec4 ret(0.0f, 0.0f, -1.0f, 1.0f);
+    Vec4 ret(0.0f, 0.0f, 1.0f, 1.0f);
     ret = rot*ret;
     return Vec3(ret.x, ret.y, ret.z);
 }

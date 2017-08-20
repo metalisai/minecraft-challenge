@@ -4,8 +4,8 @@
 class Game
 {
 public:
-    void simulate(float dt);
-    void render(class Renderer *renderer);
+    void simulate(class Renderer* renderer, float dt);
+    void updateAndRender(class Renderer *renderer, float dt);
 
     bool initialized = false;
 

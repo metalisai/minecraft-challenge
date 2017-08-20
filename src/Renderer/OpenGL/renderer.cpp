@@ -1,11 +1,11 @@
-#include "renderer.h"
+#include "../renderer.h"
 
 #include <SFML/Graphics.hpp>
 #include <cstring>
 #include <assert.h>
-#include "mesh.h"
-#include "texture.h"
-#include "../macros.h"
+#include "../mesh.h"
+#include "../texture.h"
+#include "../../macros.h"
 
 const char* vertex_shader_str = 
 R"foo(#version 130
@@ -171,6 +171,57 @@ void Renderer::checkTextureArray(TextureArray *texarr)
     }
 }
 
+void Renderer::meshInit(Mesh *mesh)
+{
+    GLuint vao, vbo, ebo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ebo);
+    mesh->rendererHandle = vao;
+    mesh->rendererHandle2 = vbo;
+    mesh->rendererHandle3 = ebo;
+}
+
+void Renderer::meshLoadData(Mesh *mesh)
+{
+    size_t vbufsize = 0;
+    size_t offset = 0;
+    vbufsize += mesh->numVertices*sizeof(Vec3);
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
+    {
+        vbufsize += mesh->numVertices*sizeof(Vec3);
+    }
+
+    // TODO: replace assert with logging an error?
+    assert(FLAGSET(mesh->flags, Mesh::Flags::HasVertices));
+    assert(FLAGSET(mesh->flags, Mesh::Flags::HasIndices));
+   
+    glBindVertexArray((GLuint)mesh->rendererHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)mesh->rendererHandle2);
+    glBufferData(GL_ARRAY_BUFFER, vbufsize, 0, GL_STATIC_DRAW);
+
+    // copy vertices
+    glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->vertices);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
+    offset += mesh->numVertices*sizeof(Vec3);
+
+    // copy texture coordinates 
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
+    {
+        glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->texCoords);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
+        offset += mesh->numVertices*sizeof(Vec3);
+        //printf("Set Tex coords\n");
+    }
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)mesh->rendererHandle3);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->numIndices*sizeof(mesh->indices[0]), mesh->indices, GL_STATIC_DRAW);
+    mesh->flags |= Mesh::Flags::Uploaded;
+    mesh->flags &= ~Mesh::Flags::Dirty;
+}
+
 void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
 {
     // load shader if not loaded
@@ -193,48 +244,12 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
     // load mesh if not loaded
     if(!FLAGSET(mesh->flags, Mesh::Flags::Uploaded))
     {
-        size_t vbufsize = 0;
-        size_t offset = 0;
-        vbufsize += mesh->numVertices*sizeof(Vec3);
-        if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
-        {
-            vbufsize += mesh->numVertices*sizeof(Vec3);
-        }
-
-        // TODO: replace assert with logging an error?
-        assert(FLAGSET(mesh->flags, Mesh::Flags::HasVertices));
-        assert(FLAGSET(mesh->flags, Mesh::Flags::HasIndices));
-        GLuint vao, vbo, ebo;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vbufsize, 0, GL_STATIC_DRAW);
-
-        // copy vertices
-        glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->vertices);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
-        offset += mesh->numVertices*sizeof(Vec3);
-
-        // copy texture coordinates 
-        if(FLAGSET(mesh->flags, Mesh::Flags::HasTexCoords))
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->texCoords);
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
-            offset += mesh->numVertices*sizeof(Vec3);
-            //printf("Set Tex coords\n");
-        }
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->numIndices*sizeof(mesh->indices[0]), mesh->indices, GL_STATIC_DRAW);
-        mesh->rendererHandle = vao;
-        mesh->rendererHandle2 = vbo;
-        mesh->rendererHandle3 = ebo;
-        mesh->flags |= Mesh::Flags::Uploaded;
-        mesh->flags &= ~Mesh::Flags::Dirty;
+        meshInit(mesh);
+        meshLoadData(mesh);
+    }
+    if(FLAGSET(mesh->flags, Mesh::Flags::Dirty) && FLAGSET(mesh->flags, Mesh::Flags::Uploaded))
+    {
+        meshLoadData(mesh);
     }
 
     // TODO: move to separate function
@@ -278,5 +293,9 @@ void Renderer::resize(float width, float height)
 
 void Renderer::presentFrame(sf::Window *window)
 {
+    GLuint gerror = glGetError();
+    if(gerror != 0)
+        fprintf(stderr, "GL error %x\n", gerror);
+
     window->display();
 }

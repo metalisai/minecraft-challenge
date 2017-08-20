@@ -2,7 +2,9 @@
 #include "Renderer/renderer.h"
 #include "Renderer/mesh.h"
 #include "Renderer/texture.h"
-#include "GameWorld/worldgenerator.h"
+#include "GameWorld/world.h"
+#include "GameWorld/chunk.h"
+#include "GameWorld/blockstore.h"
 
 #include <cstdio>
 #include <SFML/Window.hpp>
@@ -21,10 +23,10 @@
 
 static Vec3 quadVerts[] =
 {
-    {0.0f, 0.0f, 0.0f},
-    {1.0f, 0.0f, 0.0f},
-    {1.0f, 1.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f}
+    {-0.5f, -0.5f, 0.0f},
+    { 0.5f, -0.5f, 0.0f},
+    { 0.5f,  0.5f, 0.0f},
+    {-0.5f,  0.5f, 0.0f}
 };
 
 static Vec3 quadTexCoords[] = 
@@ -37,28 +39,29 @@ static Vec3 quadTexCoords[] =
 
 static uint16_t quadIndices[] = 
 {
-    0, 1, 2, 0, 2, 3
+    0, 1, 2, 0, 2, 3, 2, 1, 0, 3, 2, 0
 };
 
 Mesh mesh;
-Mesh *chunkMesh;
+//Mesh *chunkMesh;
 Texture *grass;
 TextureArray *atlas;
 
 //Block grassBlock;
 BlockStore bs;
-WorldGenerator worldGen(&bs);
+
+World* world;
 
 float rot;
 
-void Game::simulate(float dt)
+void Game::simulate(Renderer *renderer, float dt)
 {
     if(!initialized)
     {
         initialized = true;
         mesh.copyVertices(quadVerts, 4);
         mesh.copyTexCoords(quadTexCoords, 4);
-        mesh.copyIndices(quadIndices, 6);
+        mesh.copyIndices(quadIndices, 12);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
@@ -107,7 +110,12 @@ void Game::simulate(float dt)
         bs.createBlock(1, dirt);
         bs.createBlock(2, grass);
 
-        chunkMesh = worldGen.generateChunk(Vec3(-10.0f, -10.0f, -10.0f), 20);
+        world = new World(renderer, &bs, &mainCam);
+
+/*        Chunk *chunk;
+        chunk = new Chunk(&bs, world, Vec3(-10.0f, -10.0f, -10.0f), 20);
+        chunk->regenerateMesh();
+        chunkMesh = chunk->mesh;*/
     }
 
     // TODO: input system
@@ -115,11 +123,11 @@ void Game::simulate(float dt)
     const float rotSpeed = 0.4f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
-        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
+        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
     {
-        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
+        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
     {
@@ -143,17 +151,34 @@ void Game::simulate(float dt)
     this->mainCam.transform.rotation = rotX * rotY;
 
     rot += 1.0f;
+
+    world->update();
 }
 
-void Game::render(Renderer *renderer)
+Vec3 tempVec;
+
+void Game::updateAndRender(Renderer *renderer, float dt)
 {    
+    simulate(renderer, dt);
+
     this->mainCam.targetWidth = renderer->width;
     this->mainCam.targetHeight = renderer->height;
 
     Mat4 world_to_clip = mainCam.getViewProjectionMatrix();
 
     Quaternion rotQ = Quaternion::AngleAxis(rot, Vec3(0.0f, 1.0f, 0.0f));
-    Mat4 model_to_world = Mat4::Rotation(rotQ);
+
+    RaycastHit hit;
+    if(world->lineCast(hit, mainCam.transform.position, mainCam.transform.position + 10.0f*mainCam.transform.forward()))
+    {
+        tempVec = hit.point;
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+        {
+            world->setBlockId(hit.block, 0);
+        }
+    }
+
+    Mat4 model_to_world = Mat4::TRS(tempVec, rotQ, Vec3(1.0f, 1.0f, 1.0f));
     //Mat4 model_to_world = Mat4::Identity();
 
     Mat4 model_to_clip = world_to_clip * model_to_world;
@@ -163,5 +188,7 @@ void Game::render(Renderer *renderer)
 
     renderer->clearScreen(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
     renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_clip);
-    renderer->renderMesh(chunkMesh, renderer->defaultMaterial, &world_to_clip);
+    //renderer->renderMesh(chunkMesh, renderer->defaultMaterial, &world_to_clip);
+
+    world->render();
 }
