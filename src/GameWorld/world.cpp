@@ -3,16 +3,18 @@
 
 #include "../Maths/maths.h"
 
+float perlin2D(Vec3 point, float frequency);
+
 World::World(Renderer *renderer, BlockStore *blockStore, Camera *cam)
     : chunkManager(renderer, cam, blockStore, this)
 {
     this->mainCam = cam;
 
-    for(int i = -1; i < 2; i++)
-    for(int j = -1; j < 2; j++)
+    for(int i = -5; i < 6; i++)
+    for(int j = -5; j < 6; j++)
     {
-        chunkManager.loadChunk(IVec3(i*16, j*16, -16));
-        chunkManager.loadChunk(IVec3(i*16, j*16, 0));
+        chunkManager.loadChunk(IVec3(i*16, -16, j*16));
+        chunkManager.loadChunk(IVec3(i*16,   0, j*16));
     }
 }
 
@@ -27,9 +29,18 @@ World::~World()
 
 static int calcBlockId(Vec3 position)
 {
-    if(position.length() >= 10.0f && position.y < 0.0f)
-        return 2;
-    else if(position.length() < 10.0f && position.y < 0.0f)
+    float height = perlin2D(Vec3(position.x, position.z, 0.0f), 0.05641564535f) * 5.0f;
+
+    if(position.y <= height)
+    {
+        if(position.y <= ((height > 0.0f ? height : 0.0f) - 3.0f))
+            return 1;
+        else if(position.y + 1.0f <= height || position.y < -1.0f)
+            return 3;
+        else
+            return 2;
+    }
+    else if(position.y < 0.0f)
         return 9;
     else
         return 0;
@@ -51,7 +62,6 @@ uint8_t World::getBlockId(IVec3 block)
     }
     else
     {
-        printf("not found! %d %d %d\n", chunkId.x, chunkId.y, chunkId.z);
         cdata = new ChunkData();
         for(int i = 0; i < CHUNK_STORE_SIZE; i++)
         for(int j = 0; j < CHUNK_STORE_SIZE; j++)
@@ -116,7 +126,7 @@ bool World::lineCast(RaycastHit &hit, Vec3 start, Vec3 end)
         if(!(blockV == lastBlock))
         {
             uint8_t bid = getBlockId(blockV);    
-            if(bid != 0)
+            if(bid != 0 && bid != 9)
             {
                 hit.point = point;
                 hit.block = blockV;

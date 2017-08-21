@@ -64,7 +64,7 @@ void Game::simulate(Renderer *renderer, float dt)
         mesh.copyIndices(quadIndices, 12);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
-        this->mainCam.zNear = 0.001f;
+        this->mainCam.zNear = 0.1f;
         this->mainCam.zFar = 100.0f;
 
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
@@ -169,16 +169,10 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     }
 
     Mat4 model_to_world = Mat4::TRS(tempVec, rotQ, Vec3(1.0f, 1.0f, 1.0f));
-    //Mat4 model_to_world = Mat4::Identity();
-
     Mat4 model_to_clip = world_to_clip * model_to_world;
-
-    //Mat4 chunkmodel_to_clip = world_to_clip;
-    //Mat4 model_to_clip = Mat4::Identity();
 
     renderer->clearScreen(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
     renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_clip);
-    //renderer->renderMesh(chunkMesh, renderer->defaultMaterial, &world_to_clip);
 
     world->render();
 }
