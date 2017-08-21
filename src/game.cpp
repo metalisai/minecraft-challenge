@@ -94,6 +94,13 @@ void Game::simulate(Renderer *renderer, float dt)
         bs.createBlock(1, {"Stone", {1, 1, 1, 1, 1, 1}});
         bs.createBlock(2, {"Grass", {3, 3, 0, 2, 3, 3}});
         bs.createBlock(3, {"Dirt", {2, 2, 2, 2, 2, 2}});
+        bs.createBlock(4, {"Cobblestone", {16, 16, 16, 16, 16, 16}});
+        bs.createBlock(9, {"Water", {205, 205, 205, 205, 205, 205}});
+        bs.createBlock(12, {"Sand", {176, 176, 176, 176, 176, 176}});
+        bs.createBlock(13, {"Gravel", {19, 19, 19, 19, 19, 19}});
+        bs.createBlock(17, {"Wood", {20, 20, 21, 21, 20, 20}});
+        bs.createBlock(18, {"Leaves", {52, 52, 52, 52, 52, 52}});
+        bs.createBlock(45, {"Brick", {7, 7, 7, 7, 7, 7}});
 
         world = new World(renderer, &bs, &mainCam);
     }

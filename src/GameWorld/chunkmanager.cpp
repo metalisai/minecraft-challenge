@@ -59,6 +59,8 @@ void ChunkManager::update()
 void ChunkManager::render()
 {
     Mat4 world_to_clip = camera->getViewProjectionMatrix();
+    // TODO: optimize, don't recalculate matrices for waterMesh
+    renderer->setBlend(false);
     for(auto it = loadedChunks.begin(); it != loadedChunks.end(); ++it )
     {
         // TODO: only need transform
@@ -66,5 +68,13 @@ void ChunkManager::render()
         Mat4 model_to_clip = world_to_clip * model_to_world;
         renderer->renderMesh(it->second->mesh, renderer->defaultMaterial, &model_to_clip);
     }
+    renderer->setBlend(true);
+    for(auto it = loadedChunks.begin(); it != loadedChunks.end(); ++it )
+    {
+        Mat4 model_to_world = Mat4::TRS(it->second->offset, Quaternion::Identity(), Vec3(1.0f, 1.0f, 1.0f));
+        Mat4 model_to_clip = world_to_clip * model_to_world;
+        renderer->renderMesh(it->second->waterMesh, renderer->defaultMaterial, &model_to_clip);
+    }
+
 }
 

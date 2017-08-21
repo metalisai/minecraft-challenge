@@ -11,7 +11,8 @@ public:
     enum Flags
     {
         Dirty           = 1 << 0,
-        HasMesh         = 1 << 1
+        HasMesh         = 1 << 1,
+        HasWaterMesh    = 1 << 2
     };
 
     Chunk(class BlockStore *blockStore, class World *world, Vec3 offset, int size);
@@ -24,6 +25,7 @@ public:
     Vec3 offset;
     int flags;
     class Mesh *mesh;
+    class Mesh *waterMesh;
     class BlockStore *blockStore;
     class World *world;
 };

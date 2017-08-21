@@ -29,8 +29,8 @@ static int calcBlockId(Vec3 position)
 {
     if(position.length() >= 10.0f && position.y < 0.0f)
         return 2;
-    else if(position.y >= 7.0f)
-        return 1;
+    else if(position.length() < 10.0f && position.y < 0.0f)
+        return 9;
     else
         return 0;
 }

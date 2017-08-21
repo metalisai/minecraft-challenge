@@ -20,6 +20,9 @@ public:
     void renderMesh(class Mesh *mesh, class Material *material, struct Mat4 *modelM);
     void resize(float width, float height);
 
+    // TODO: this should be attached to material
+    void setBlend(bool enabled);
+
     static Shader *defaultShader;
     static Material *defaultMaterial;
 

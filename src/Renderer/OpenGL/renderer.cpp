@@ -59,6 +59,10 @@ Renderer::Renderer(float width, float height)
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glAlphaFunc(GL_GREATER, 0.1f);
+    glEnable(GL_ALPHA_TEST);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
 }
@@ -298,4 +302,17 @@ void Renderer::presentFrame(sf::Window *window)
         fprintf(stderr, "GL error %x\n", gerror);
 
     window->display();
+}
+
+void Renderer::setBlend(bool enabled)
+{
+    if(enabled)
+    {
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+    }
+    else
+    {
+        glDisable(GL_BLEND);
+    }
 }

@@ -43,9 +43,22 @@ IVec3 Chunk::getChunkId(IVec3 block)
     return ret;
 }
 
+bool isTransparent(uint8_t blockId)
+{
+    switch(blockId)
+    {
+        case 0:
+            return true;
+        case 9:
+            return true;
+        default:
+            return false;
+    };
+}
+
 void Chunk::regenerateMesh()
 {
-    Mesh* mesh;
+    Mesh *mesh, *transMesh;
     if(FLAGSET(this->flags, Flags::HasMesh))
         mesh = this->mesh;
     else
@@ -53,13 +66,27 @@ void Chunk::regenerateMesh()
         mesh = new Mesh();
         this->mesh = mesh;
     }
+    if(FLAGSET(this->flags, Flags::HasWaterMesh))
+    {
+        transMesh = this->waterMesh;
+    }
+    else
+    {
+        waterMesh = new Mesh();
+        this->waterMesh = waterMesh;
+    }
 
-    // TODO: regenerate mesh
     Vec3 vertices[65536];
     Vec3 texCoords[65536];
     uint16_t indices[65536];
     int vertCount = 0;
     int indexCount = 0;
+
+    Vec3 transVertices[65536];
+    Vec3 transTexCoords[65536];
+    uint16_t transIndices[65536];
+    int transVertCount = 0;
+    int transIndexCount = 0;
 
     int size = this->size;
     for(int i = 0; i < size; i++)
@@ -70,6 +97,7 @@ void Chunk::regenerateMesh()
         IVec3 blockV((int)offset.x+i, (int)offset.y+j, (int)offset.z+k);
         int blockId = world->getBlockId(blockV);
         bool blockEmpty = blockId == 0;
+        bool blockTransparent = isTransparent(blockId);
         
         Block *block = blockStore->getBlock(blockId);
 
@@ -78,22 +106,49 @@ void Chunk::regenerateMesh()
             uint8_t dirBlockId = world->getBlockId(IVec3(blockV.x+(int)directions[dir].x, blockV.y+(int)directions[dir].y, blockV.z+(int)directions[dir].z));
             Block *dirBlock = blockStore->getBlock(dirBlockId);
             bool dirEmpty = dirBlockId == 0;
-            if(blockEmpty != dirEmpty)
+            bool dirTransparent = isTransparent(dirBlockId);
+            if(blockEmpty != dirEmpty || blockTransparent != dirTransparent)
             {
-                int firstIndex = vertCount;
+                Block* faceBlock;
+                if(blockEmpty != dirEmpty)
+                    faceBlock = blockEmpty ? dirBlock : block;
+                else if(blockTransparent != dirTransparent)
+                    faceBlock = blockTransparent ? dirBlock : block;
+
+                uint8_t faceBlockId = faceBlock == block ? blockId : dirBlockId;
+                bool faceTransparent = (isTransparent(faceBlockId) && faceBlockId != 0);
+
                 for(int vert = 0; vert < 4; vert++)
                 {
-                    vertices[vertCount] = localOffset + sideQuads[dir][vert] + directions[dir];
-                    texCoords[vertCount] = sideTexCoords[dir][vert];
-                    texCoords[vertCount].z = blockEmpty ? dirBlock->faceTextureLayers[dir*2 + 1] 
-                        : block->faceTextureLayers[dir*2];
-                    vertCount++;
+                    if(!faceTransparent)
+                    {
+                        vertices[vertCount] = localOffset + sideQuads[dir][vert] + directions[dir];
+                        texCoords[vertCount] = sideTexCoords[dir][vert];
+                        texCoords[vertCount].z = faceBlock->faceTextureLayers[dir*2 + (faceBlock == block ? 0 : 1)];
+                        vertCount++;
+                    }
+                    else
+                    {
+                        transVertices[transVertCount] = localOffset + sideQuads[dir][vert] + directions[dir];
+                        transTexCoords[transVertCount] = sideTexCoords[dir][vert];
+                        transTexCoords[transVertCount].z = faceBlock->faceTextureLayers[dir*2 + (faceBlock == block ? 0 : 1)];
+                        transVertCount++;
+                    }
                 }
                 for(int idx = 0; idx < 6; idx++)
                 {
-                    int vertIdx = blockEmpty ? 5 - idx : idx;
-                    indices[indexCount] = firstIndex + quadIndices[vertIdx];
-                    indexCount++;
+                    int vertIdx;
+                    vertIdx = faceBlock == block ? idx : 5 - idx;
+                    if(!faceTransparent)
+                    {
+                        indices[indexCount] = vertCount - 4 + quadIndices[vertIdx];
+                        indexCount++;
+                    }
+                    else
+                    {
+                        transIndices[transIndexCount] = transVertCount - 4 + quadIndices[vertIdx];
+                        transIndexCount++;
+                    }
                 }
             }
         }
@@ -103,7 +158,12 @@ void Chunk::regenerateMesh()
     mesh->copyTexCoords(texCoords, vertCount);
     mesh->copyIndices(indices, indexCount);
 
+    waterMesh->copyVertices(transVertices, transVertCount);
+    waterMesh->copyTexCoords(transTexCoords, transVertCount);
+    waterMesh->copyIndices(transIndices, transIndexCount);
+
     this->flags |= Flags::HasMesh;
+    this->flags |= Flags::HasWaterMesh;
     this->flags &= ~Flags::Dirty;
 }
 
