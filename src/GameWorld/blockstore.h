@@ -13,7 +13,6 @@ class Block
 {
 public:
     const char *name;
-    int faceTextures[6];
     int faceTextureLayers[6];
 };
 
@@ -25,7 +24,7 @@ public:
         Initialized = 1<<0   
     };
 
-    void createBlock(int blockId, Block &block)
+    void createBlock(int blockId, const Block &block)
     {
         assert(blockId < 256);
         blockFlags[blockId] |= Flags::Initialized;

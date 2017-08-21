@@ -69,53 +69,33 @@ void Game::simulate(Renderer *renderer, float dt)
         camRot = Vec2(0.0f, 0.0f);
 
         // texture
-        int x,y,n;
-        unsigned char *data = stbi_load("Resources/grass.png", &x, &y, &n, 0);
-        grass = new Texture(x, y, n);
-        grass->copyData(data, x, y, n);
         
-        atlas = new TextureArray(16, 16, n, 255);
-        //atlas->copyLayer(data, x, y, n, 0);
+        atlas = new TextureArray(16, 16, 4, 256);
 
+        int width, height, comps;
+        unsigned char *data;
+
+        data = stbi_load("Resources/mcatlas.png", &width, &height, &comps, 0);
+        uint8_t texData[16*16*4];
+        for(int i = 0; i < 16; i++)
+        for(int j = 0; j < 16; j++)
+        {
+            for(int x = 0; x < 16; x++)
+            for(int y = 0; y < 16; y++)
+            {
+                memcpy(&texData[x*16*4 + y*4], &data[(i*16+x)*width*4 + (j*16+y)*4], 4);
+                atlas->copyLayer(texData, 16, 16, 4, i*16+j);
+            }
+        }
         stbi_image_free(data);
-        data = stbi_load("Resources/dirt.png", &x, &y, &n, 0);
-        atlas->copyLayer(data, x, y, n, 0);
-        stbi_image_free(data);
-        data = stbi_load("Resources/grass-side.png", &x, &y, &n, 0);
-        atlas->copyLayer(data, x, y, n, 1);
-        stbi_image_free(data);
-        data = stbi_load("Resources/grass-top.png", &x, &y, &n, 0);
-        atlas->copyLayer(data, x, y, n, 2);
-        stbi_image_free(data);
-        Renderer::defaultMaterial->addTexture("tex", grass);
+
         Renderer::defaultMaterial->addTextureArray("texArr", atlas);
 
-        Block dirt, grass;
-        dirt.name = "Dirt";
-        dirt.faceTextureLayers[0] = 0;
-        dirt.faceTextureLayers[1] = 0;
-        dirt.faceTextureLayers[2] = 0;
-        dirt.faceTextureLayers[3] = 0;
-        dirt.faceTextureLayers[4] = 0;
-        dirt.faceTextureLayers[5] = 0;
-
-        grass.name = "Grass";
-        grass.faceTextureLayers[0] = 1;
-        grass.faceTextureLayers[1] = 1;
-        grass.faceTextureLayers[2] = 2;
-        grass.faceTextureLayers[3] = 0;
-        grass.faceTextureLayers[4] = 1;
-        grass.faceTextureLayers[5] = 1;
-
-        bs.createBlock(1, dirt);
-        bs.createBlock(2, grass);
+        bs.createBlock(1, {"Stone", {1, 1, 1, 1, 1, 1}});
+        bs.createBlock(2, {"Grass", {3, 3, 0, 2, 3, 3}});
+        bs.createBlock(3, {"Dirt", {2, 2, 2, 2, 2, 2}});
 
         world = new World(renderer, &bs, &mainCam);
-
-/*        Chunk *chunk;
-        chunk = new Chunk(&bs, world, Vec3(-10.0f, -10.0f, -10.0f), 20);
-        chunk->regenerateMesh();
-        chunkMesh = chunk->mesh;*/
     }
 
     // TODO: input system
