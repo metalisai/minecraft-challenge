@@ -256,24 +256,24 @@ inline Mat4 operator *= (Mat4 &l, Mat4 const &r)
 inline Mat4 Mat4::Perspective(float fov, float aspect, float zNear, float zFar)
 {
 	Mat4 ret;
-	const float h = 1.0f / (float)tan(fov*TUT_DEG2RAD_F*0.5f);
-	float depth = zFar - zNear;
+	const float tanHalfFOV = tanf(fov*TUT_DEG2RAD_F*0.5f);
+	float depth = zNear - zFar;
 
 	// row 1
-	ret.m11 = h / aspect;
+	ret.m11 = 1.0f / (tanHalfFOV * aspect);
 	ret.m12 = 0.0f;
 	ret.m13 = 0.0f;
 	ret.m14 = 0.0f;
 
 	ret.m21 = 0.0f;
-	ret.m22 = h;
+	ret.m22 = 1.0f / tanHalfFOV;
 	ret.m23 = 0.0f;
 	ret.m24 = 0.0f;
 
 	ret.m31 = 0.0f;
 	ret.m32 = 0.0f;
-	ret.m33 = -2.0f / depth;
-	ret.m34 = -((zFar+zNear)/depth);
+	ret.m33 = (-zNear - zFar) / depth;
+	ret.m34 = 2.0f * zFar * zNear / depth;
 
 	ret.m41 = 0.0f;
 	ret.m42 = 0.0f;

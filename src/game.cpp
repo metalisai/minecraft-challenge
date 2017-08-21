@@ -64,6 +64,9 @@ void Game::simulate(Renderer *renderer, float dt)
         mesh.copyIndices(quadIndices, 12);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
+        this->mainCam.zNear = 0.001f;
+        this->mainCam.zFar = 100.0f;
+
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
         mousePosLast = Vec2((float)globalPosition.x, (float)globalPosition.y);
         camRot = Vec2(0.0f, 0.0f);
