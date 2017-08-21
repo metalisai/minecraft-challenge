@@ -27,7 +27,7 @@ World::~World()
 
 static int calcBlockId(Vec3 position)
 {
-    if(position.length() >= 10.0f)
+    if(position.length() >= 10.0f && position.y < 0.0f)
         return 2;
     else
         return 0;
