@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <SFML/Window.hpp>
 
-#define STBI_NO_JPEG
+#define        STBI_NO_JPEG
 //#define        STBI_NO_PNG
 #define        STBI_NO_BMP
 #define        STBI_NO_PSD
@@ -64,6 +64,7 @@ void Game::simulate(Renderer *renderer, float dt)
         mesh.copyIndices(quadIndices, 12);
 
         this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
+        // NOTE: also hardcoded in frag shader currently
         this->mainCam.zNear = 0.1f;
         this->mainCam.zFar = 100.0f;
 
@@ -108,7 +109,7 @@ void Game::simulate(Renderer *renderer, float dt)
     }
 
     // TODO: input system
-    const float moveSpeed = 3.0f;
+    const float moveSpeed = 30.0f;
     const float rotSpeed = 0.4f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
@@ -170,7 +171,7 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     Mat4 model_to_world = Mat4::TRS(tempVec, rotQ, Vec3(1.0f, 1.0f, 1.0f));
     Mat4 model_to_clip = world_to_clip * model_to_world;
 
-    renderer->clearScreen(Vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    renderer->clearScreen(Vec4(0.8f, 0.8f, 0.8f, 1.0f));
     renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_clip);
 
     world->render();

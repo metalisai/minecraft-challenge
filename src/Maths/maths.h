@@ -368,3 +368,5 @@ inline Quaternion operator *= (Quaternion &l, Quaternion const &r)
 	l = l*r;
 	return l;
 }
+
+float perlin2D(Vec3 point, float frequency);

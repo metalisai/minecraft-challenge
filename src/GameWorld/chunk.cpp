@@ -16,11 +16,11 @@ namespace
     extern uint16_t quadIndices[6]; 
 }
 
-Chunk::Chunk(BlockStore *blockStore, class World *world, Vec3 offset, int size)
+Chunk::Chunk(BlockStore *blockStore, class World *world, IVec3 offset, int size)
 {
     this->flags = 0;
     this->offset = offset;
-    printf("%f %f %f\n", offset.x, offset.y, offset.z);
+    printf("%d %d %d\n", offset.x, offset.y, offset.z);
     this->size = size;
 
     this->mesh = nullptr;
@@ -32,6 +32,8 @@ Chunk::~Chunk()
 {
     if(FLAGSET(this->flags, Flags::HasMesh))
         delete this->mesh;
+    if(FLAGSET(this->flags, Flags::HasWaterMesh))
+        delete this->waterMesh;
 }
 
 IVec3 Chunk::getChunkId(IVec3 block)

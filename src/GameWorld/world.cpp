@@ -3,19 +3,10 @@
 
 #include "../Maths/maths.h"
 
-float perlin2D(Vec3 point, float frequency);
-
 World::World(Renderer *renderer, BlockStore *blockStore, Camera *cam)
-    : chunkManager(renderer, cam, blockStore, this)
+    : chunkManager(renderer, cam, blockStore, this), worldGenerator(this)
 {
     this->mainCam = cam;
-
-    for(int i = -5; i < 6; i++)
-    for(int j = -5; j < 6; j++)
-    {
-        chunkManager.loadChunk(IVec3(i*16, -16, j*16));
-        chunkManager.loadChunk(IVec3(i*16,   0, j*16));
-    }
 }
 
 World::~World()
@@ -27,23 +18,28 @@ World::~World()
     chunks.clear();
 }
 
-static int calcBlockId(Vec3 position)
+ChunkData* World::getOrCreateChunkData(IVec3 chunkId)
 {
-    float height = perlin2D(Vec3(position.x, position.z, 0.0f), 0.05641564535f) * 5.0f;
-
-    if(position.y <= height)
+    if(this->lastChunkAccess != nullptr 
+            && this->lastChunkAccess->offset == chunkId)
     {
-        if(position.y <= ((height > 0.0f ? height : 0.0f) - 3.0f))
-            return 1;
-        else if(position.y + 1.0f <= height || position.y < -1.0f)
-            return 3;
-        else
-            return 2;
+        return this->lastChunkAccess;
     }
-    else if(position.y < 0.0f)
-        return 9;
+
+    ChunkData *ret;
+    auto fchunk = this->chunks.find(chunkId);
+    if(fchunk != this->chunks.end())
+    {
+        ret = fchunk->second;
+    }
     else
-        return 0;
+    {
+        ret = new ChunkData(chunkId);
+        this->chunks.insert({chunkId, ret});
+        worldGenerator.fillChunk(chunkId);
+    }
+    this->lastChunkAccess = ret;
+    return ret;
 }
 
 uint8_t World::getBlockId(IVec3 block)
@@ -52,26 +48,9 @@ uint8_t World::getBlockId(IVec3 block)
     IVec3 localOffset(block.x - chunkId.x, block.y - chunkId.y, block.z - chunkId.z);
     auto fchunk = this->chunks.find(chunkId);
     
-    ChunkData *cdata;
+    ChunkData *cdata = getOrCreateChunkData(chunkId);
 
     const int s = CHUNK_STORE_SIZE;
-
-    if(fchunk != this->chunks.end())
-    {
-        cdata = fchunk->second;
-    }
-    else
-    {
-        cdata = new ChunkData();
-        for(int i = 0; i < CHUNK_STORE_SIZE; i++)
-        for(int j = 0; j < CHUNK_STORE_SIZE; j++)
-        for(int k = 0; k < CHUNK_STORE_SIZE; k++)
-        {
-            Vec3 offset(chunkId.x + i, chunkId.y + j, chunkId.z + k);
-            cdata->data[i*s*s + j*s + k] = calcBlockId(offset);
-        }
-        this->chunks.insert({chunkId, cdata});
-    }
     uint8_t ret = cdata->data[localOffset.x*s*s + localOffset.y*s + localOffset.z];
     return ret;
 }
@@ -81,28 +60,10 @@ uint8_t World::setBlockId(IVec3 block, uint8_t newId)
 {
     IVec3 chunkId = Chunk::getChunkId(block);
     IVec3 localOffset(block.x - chunkId.x, block.y - chunkId.y, block.z - chunkId.z);
-    auto fchunk = this->chunks.find(chunkId);
     
-    ChunkData *cdata;
+    ChunkData *cdata = getOrCreateChunkData(chunkId);
 
     const int s = CHUNK_STORE_SIZE;
-
-    if(fchunk != this->chunks.end())
-    {
-        cdata = fchunk->second;
-    }
-    else
-    {
-        cdata = new ChunkData();
-        for(int i = 0; i < CHUNK_STORE_SIZE; i++)
-        for(int j = 0; j < CHUNK_STORE_SIZE; j++)
-        for(int k = 0; k < CHUNK_STORE_SIZE; k++)
-        {
-            Vec3 offset(chunkId.x + i, chunkId.y + j, chunkId.z + k);
-            cdata->data[i*s*s + j*s + k] = calcBlockId(offset);
-        }
-        this->chunks.insert({chunkId, cdata});
-    }
     uint8_t ret = cdata->data[localOffset.x*s*s + localOffset.y*s + localOffset.z];
     cdata->data[localOffset.x*s*s + localOffset.y*s + localOffset.z] = newId;
     if(ret != newId)

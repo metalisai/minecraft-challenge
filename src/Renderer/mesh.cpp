@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdio>
 #include "../macros.h"
+#include "renderevents.h"
 
 Mesh::Mesh()
 {
@@ -15,6 +16,8 @@ Mesh::Mesh()
 
 Mesh::~Mesh()
 {
+    RenderEvents::meshDeleted(this);
+
     if(FLAGSET(this->flags, Mesh::Flags::HasVertices))
     {
         delete[] this->vertices;

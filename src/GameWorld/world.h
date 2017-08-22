@@ -7,6 +7,7 @@
 #include "chunk.h"
 #include "chunkmanager.h"
 #include "../camera.h"
+#include "worldgenerator.h"
 
 struct ChunkData
 {
@@ -15,7 +16,13 @@ struct ChunkData
         Populated = 1 << 0
     };
 
+    ChunkData(IVec3 offset)
+    {
+        this->offset = offset;
+    }
+
     int flags;
+    IVec3 offset;
     uint8_t data[CHUNK_STORE_SIZE*CHUNK_STORE_SIZE*CHUNK_STORE_SIZE];
 };
 
@@ -31,6 +38,7 @@ public:
     World(class Renderer *renderer, class BlockStore *blockStore, class Camera *cam);
     ~World();
 
+    class ChunkData* getOrCreateChunkData(IVec3 chunkId);
     uint8_t getBlockId(IVec3 block);
     uint8_t setBlockId(IVec3 block, uint8_t newId);
     bool lineCast(RaycastHit& hit, Vec3 start, Vec3 end);
@@ -43,5 +51,7 @@ public:
     class Camera *mainCam;
     class Renderer *renderer;
     class BlockStore *blockStore;
+    ChunkData *lastChunkAccess = nullptr;
     ChunkManager chunkManager;
+    WorldGenerator worldGenerator;
 };

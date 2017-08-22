@@ -9,7 +9,8 @@ public:
     ChunkManager(class Renderer* renderer, class Camera* camera, class BlockStore *blockStore, class World *world);
     ~ChunkManager();
 
-    void loadChunk(IVec3 chunkId);
+    bool loadChunk(IVec3 chunkId);
+    void unloadChunk(IVec3 chunkId);
     void blockDirty(IVec3 block);
     void blockChanged(IVec3 block);
     void update();
@@ -21,4 +22,5 @@ public:
     class Camera *camera;
     class BlockStore *blockStore;
     class World *world;
+    int frameId = 0;
 };

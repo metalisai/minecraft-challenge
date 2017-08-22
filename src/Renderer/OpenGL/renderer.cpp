@@ -17,9 +17,11 @@ uniform mat4 MVP;
 
 out vec4 fragColor;
 out vec3 fragUv;
+out vec4 fragPos;
 
 void main() {
 	gl_Position = MVP*position;
+    fragPos = gl_Position;
     //fragColor = color;
     fragUv = uv;
     //gl_Position = position;
@@ -31,6 +33,7 @@ out vec4 outColor;
 
 in vec4 fragColor;
 in vec3 fragUv;
+in vec4 fragPos;
 
 uniform sampler2D tex;
 uniform sampler2DArray texArr;
@@ -39,7 +42,13 @@ void main() {
     //vec2 uv = vec2(fragUv.x, 1.0f - fragUv.y);
     vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
     //outColor = texture(tex, uv);
-    outColor = texture(texArr, uv3);
+    float f = 100.0;
+    float n = 0.1;
+    float z = (2.0 * n) / (f + n - ((fragPos.z/fragPos.w)*0.5+0.5) * (f - n));
+
+    float fog = clamp((z - 0.5) * 2.0, 0.0, 1.0);
+
+    outColor = mix(texture(texArr, uv3), vec4(0.8f, 0.8f, 0.8f, 1.0f), fog);
 })foo";
 
 Shader *Renderer::defaultShader;
@@ -224,6 +233,26 @@ void Renderer::meshLoadData(Mesh *mesh)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->numIndices*sizeof(mesh->indices[0]), mesh->indices, GL_STATIC_DRAW);
     mesh->flags |= Mesh::Flags::Uploaded;
     mesh->flags &= ~Mesh::Flags::Dirty;
+}
+
+void Renderer::meshUnload(Mesh *mesh)
+{
+    if(FLAGSET(mesh->flags, Mesh::Flags::Uploaded))
+    {
+        GLuint vao, vbo, ebo;
+        vao = mesh->rendererHandle;
+        vbo = mesh->rendererHandle2;
+        ebo = mesh->rendererHandle3;
+        assert(vao != 0 && vbo != 0 && ebo != 0);
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
+
+        mesh->rendererHandle = 0;
+        mesh->rendererHandle2 = 0;
+        mesh->rendererHandle3 = 0;
+        mesh->flags &= ~Mesh::Flags::Uploaded;
+    }
 }
 
 void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)

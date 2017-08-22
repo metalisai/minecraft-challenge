@@ -15,14 +15,14 @@ public:
         HasWaterMesh    = 1 << 2
     };
 
-    Chunk(class BlockStore *blockStore, class World *world, Vec3 offset, int size);
+    Chunk(class BlockStore *blockStore, class World *world, IVec3 offset, int size);
     ~Chunk();
 
     void regenerateMesh();
     static IVec3 getChunkId(IVec3 block);
 
     int size;
-    Vec3 offset;
+    IVec3 offset;
     int flags;
     class Mesh *mesh;
     class Mesh *waterMesh;
