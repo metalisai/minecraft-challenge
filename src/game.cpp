@@ -84,11 +84,10 @@ void Game::simulate(Renderer *renderer, float dt)
         for(int j = 0; j < 16; j++)
         {
             for(int x = 0; x < 16; x++)
-            for(int y = 0; y < 16; y++)
             {
-                memcpy(&texData[x*16*4 + y*4], &data[(i*16+x)*width*4 + (j*16+y)*4], 4);
-                atlas->copyLayer(texData, 16, 16, 4, i*16+j);
+                memcpy(&texData[x*16*4], &data[(i*16+x)*width*4 + (j*16)*4], 64);
             }
+            atlas->copyLayer(texData, 16, 16, 4, i*16+j);
         }
         stbi_image_free(data);
 
