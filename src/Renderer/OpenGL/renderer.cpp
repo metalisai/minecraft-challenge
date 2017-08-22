@@ -14,10 +14,13 @@ in vec3 uv;
 in vec4 color;
 
 uniform mat4 MVP;
+uniform vec3 lightDir;
 
 out vec4 fragColor;
 out vec3 fragUv;
 out vec4 fragPos;
+out vec3 fragNormal;
+flat out vec3 fragLightDir;
 
 void main() {
 	gl_Position = MVP*position;
@@ -25,6 +28,10 @@ void main() {
     //fragColor = color;
     fragUv = uv;
     //gl_Position = position;
+
+    mat3 MVP3 = mat3(MVP);
+    fragLightDir = MVP3 * lightDir;
+    fragNormal = MVP3 * vec3(0.0, 1.0, 0.0);
 })foo";
 
 const char* frag_shader_str = 
@@ -34,21 +41,27 @@ out vec4 outColor;
 in vec4 fragColor;
 in vec3 fragUv;
 in vec4 fragPos;
+in vec3 fragNormal;
+
+flat in vec3 fragLightDir;
 
 uniform sampler2D tex;
 uniform sampler2DArray texArr;
 
 void main() {
-    //vec2 uv = vec2(fragUv.x, 1.0f - fragUv.y);
     vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
-    //outColor = texture(tex, uv);
+    
+    // fog
     float f = 100.0;
     float n = 0.1;
     float z = (2.0 * n) / (f + n - ((fragPos.z/fragPos.w)*0.5+0.5) * (f - n));
-
     float fog = clamp((z - 0.5) * 2.0, 0.0, 1.0);
+    
+    vec4 color4 = texture(texArr, uv3);
+    // directional light
+    color4.rgb = color4.rgb * clamp(dot(normalize(fragLightDir), normalize(fragNormal)), 0.0, 1.0);
 
-    outColor = mix(texture(texArr, uv3), vec4(0.8f, 0.8f, 0.8f, 1.0f), fog);
+    outColor = mix(color4, vec4(0.8f, 0.8f, 0.8f, 1.0f), fog);
 })foo";
 
 Shader *Renderer::defaultShader;
@@ -289,6 +302,9 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
     GLuint useProgram = ((GLuint)material->shader->renderer_handle);
     glUseProgram(useProgram);
     GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
+    GLuint lightLoc = glGetUniformLocation(useProgram, "lightDir");
+    Vec3 lightDir(0.0f, 0.316f, 0.9486f);
+    glUniform3fv(lightLoc, 1, (GLfloat*)&lightDir);
     glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
     int texUnit = 0;
     for (auto it = material->textures.begin(); it != material->textures.end(); ++it)
@@ -328,7 +344,10 @@ void Renderer::presentFrame(sf::Window *window)
 {
     GLuint gerror = glGetError();
     if(gerror != 0)
+    {
         fprintf(stderr, "GL error %x\n", gerror);
+        __builtin_trap();
+    }
 
     window->display();
 }
