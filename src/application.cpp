@@ -64,6 +64,11 @@ void Application::doEvents()
                     game->mouseClick(0);
                 break;
             case sf::Event::KeyPressed:
+                if(event.key.code == sf::Keyboard::Escape)
+                {
+                    this->exit();
+                    return;
+                }
                 game->keyPress(event.key.code);
                 break;
             default:

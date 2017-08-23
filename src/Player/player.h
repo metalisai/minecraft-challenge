@@ -1,3 +1,4 @@
+#pragma once 
 
 #include "../camera.h"
 #include "inventory.h"

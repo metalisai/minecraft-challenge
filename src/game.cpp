@@ -1,10 +1,9 @@
 #include "game.h"
 #include "Renderer/renderer.h"
-#include "Renderer/mesh.h"
 #include "Renderer/texture.h"
 #include "GameWorld/world.h"
 #include "GameWorld/chunk.h"
-#include "GameWorld/blockstore.h"
+#include "Player/gui.h"
 
 #include <cstdio>
 
@@ -20,38 +19,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "Libs/stb_image.h"
 
-static Vec3 quadVerts[] =
+
+Game::~Game()
 {
-    {-0.5f, -0.5f, 0.0f},
-    { 0.5f, -0.5f, 0.0f},
-    { 0.5f,  0.5f, 0.0f},
-    {-0.5f,  0.5f, 0.0f}
-};
-
-static Vec3 quadTexCoords[] = 
-{
-    {0.0f, 0.0f, 0.0f},
-    {1.0f, 0.0f, 0.0f},
-    {1.0f, 1.0f, 0.0f},
-    {0.0f, 1.0f, 0.0f}
-};
-
-static uint16_t quadIndices[] = 
-{
-    0, 1, 2, 0, 2, 3, 2, 1, 0, 3, 2, 0
-};
-
-Mesh mesh;
-//Mesh *chunkMesh;
-Texture *grass;
-TextureArray *atlas;
-
-//Block grassBlock;
-BlockStore bs;
-
-World* world;
-
-float rot;
+    if(this->gui != nullptr)
+    {
+        delete this->gui;
+    }
+}
 
 void Game::setMode(uint32_t mode)
 {
@@ -76,9 +51,6 @@ void Game::simulate(Renderer *renderer, float dt)
     if(!initialized)
     {
         initialized = true;
-        mesh.copyVertices(quadVerts, 4);
-        mesh.copyTexCoords(quadTexCoords, 4);
-        mesh.copyIndices(quadIndices, 12);
 
         this->freeCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         // NOTE: also hardcoded in frag shader currently
@@ -93,13 +65,15 @@ void Game::simulate(Renderer *renderer, float dt)
 
         // texture
         
-        atlas = new TextureArray(16, 16, 4, 256);
+        atlas = new TextureArray(16, 16, 4, 257);
 
         int width, height, comps;
         unsigned char *data;
 
         data = stbi_load("Resources/mcatlas.png", &width, &height, &comps, 0);
         uint8_t texData[16*16*4];
+        memset(texData, 0xFF, 16*16*4);
+        atlas->copyLayer(texData, 16, 16, 4, 0); // first layer white
         for(int i = 0; i < 16; i++)
         for(int j = 0; j < 16; j++)
         {
@@ -107,32 +81,39 @@ void Game::simulate(Renderer *renderer, float dt)
             {
                 memcpy(&texData[x*16*4], &data[(i*16+x)*width*4 + (j*16)*4], 64);
             }
-            atlas->copyLayer(texData, 16, 16, 4, i*16+j);
+            atlas->copyLayer(texData, 16, 16, 4, i*16+j+1);
         }
         stbi_image_free(data);
 
         Renderer::defaultMaterial->addTextureArray("texArr", atlas);
+        Renderer::solidMaterial->addTextureArray("texArr", atlas);
 
-        bs.createBlock(1, {"Stone", {1, 1, 1, 1, 1, 1}});
-        bs.createBlock(2, {"Grass", {3, 3, 0, 2, 3, 3}});
-        bs.createBlock(3, {"Dirt", {2, 2, 2, 2, 2, 2}});
-        bs.createBlock(4, {"Cobblestone", {16, 16, 16, 16, 16, 16}});
-        bs.createBlock(9, {"Water", {205, 205, 205, 205, 205, 205}});
-        bs.createBlock(12, {"Sand", {176, 176, 176, 176, 176, 176}});
-        bs.createBlock(13, {"Gravel", {19, 19, 19, 19, 19, 19}});
-        bs.createBlock(17, {"Wood", {20, 20, 21, 21, 20, 20}});
-        bs.createBlock(18, {"Leaves", {52, 52, 52, 52, 52, 52}});
-        bs.createBlock(45, {"Brick", {7, 7, 7, 7, 7, 7}});
+        blockStore.createBlock(1, {"Stone", {2, 2, 2, 2, 2, 2}});
+        blockStore.createBlock(2, {"Grass", {4, 4, 1, 3, 4, 4}});
+        blockStore.createBlock(3, {"Dirt", {3, 3, 3, 3, 3, 3}});
+        blockStore.createBlock(4, {"Cobblestone", {17, 17, 17, 17, 17, 17}});
+        blockStore.createBlock(9, {"Water", {206, 206, 206, 206, 206, 206}});
+        blockStore.createBlock(12, {"Sand", {177, 177, 177, 177, 177, 177}});
+        blockStore.createBlock(13, {"Gravel", {20, 20, 20, 20, 20, 20}});
+        blockStore.createBlock(17, {"Wood", {21, 21, 22, 22, 21, 21}});
+        blockStore.createBlock(18, {"Leaves", {53, 53, 53, 53, 53, 53}});
+        blockStore.createBlock(45, {"Brick", {8, 8, 8, 8, 8, 8}});
 
-        world = new World(renderer, &bs, &freeCam);
+        world = new World(renderer, &blockStore, &freeCam);
         setMode(Mode::Mode_FreeView);
+
+        this->gui = new Gui(renderer, &this->player, &blockStore);
     }
 
     // get the global mouse position (relative to the desktop)
     sf::Vector2i globalPosition = sf::Mouse::getPosition();
     this->mouseDelta = Vec2(globalPosition.x - mousePosLast.x, globalPosition.y - mousePosLast.y);
-    sf::Mouse::setPosition(sf::Vector2i(renderer->width / 2.0f, renderer->height / 2.0f), *window);
-    globalPosition = sf::Mouse::getPosition();
+    
+    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
+    {
+        sf::Mouse::setPosition(sf::Vector2i(renderer->width / 2.0f, renderer->height / 2.0f), *window);
+        globalPosition = sf::Mouse::getPosition();
+    }
     mousePosLast = Vec2((float)globalPosition.x, (float)globalPosition.y);
 
     // TODO: move somewhere else
@@ -171,8 +152,6 @@ void Game::simulate(Renderer *renderer, float dt)
         player.update(dt, mouseDelta);
     }
 
-    rot += 1.0f;
-
     world->update();
 }
 
@@ -182,26 +161,40 @@ void Game::keyPress(sf::Keyboard::Key key)
         setMode(Mode::Mode_Player);
     else if(key == sf::Keyboard::F2)
         setMode(Mode::Mode_FreeView);
+    else if(key == sf::Keyboard::E)
+    {
+        for(int i = 0; i < ARRAY_COUNT(player.inventory.mainSlots); i++)
+        {
+            Inventory::Slot slot = player.inventory.mainSlots[i];
+            if(slot.blockId != 0 && slot.stacks != 0)
+            {
+                printf("%s: %d\n", blockStore.blocks[slot.blockId].name, slot.stacks);
+            }
+        }
+    }
 }
 
 void Game::mouseClick(int button)
 {
-    RaycastHit hit;
-    if(world->lineCast(hit, activeCam->transform.position, activeCam->transform.position + 10.0f*activeCam->transform.forward()))
+    if(mode == Mode::Mode_Player)
     {
-        if (button == 0)
+        RaycastHit hit;
+        if(world->lineCast(hit, activeCam->transform.position, activeCam->transform.position + 10.0f*activeCam->transform.forward()))
         {
-            world->setBlockId(hit.block, 0);
-        }
-        else if(button == 1)
-        {
-            world->setBlockId(hit.block + hit.faceDirection, 1);
+            if (button == 0)
+            {
+                uint8_t gotBlock = world->setBlockId(hit.block, 0);
+                if(gotBlock == 2) // grass changes to dirt when broken
+                    gotBlock = 3;
+                player.inventory.tryStoreBlock(gotBlock);
+            }
+            else if(button == 1)
+            {
+                world->setBlockId(hit.block + hit.faceDirection, 1);
+            }
         }
     }
-
 }
-
-Vec3 tempVec;
 
 void Game::updateAndRender(Renderer *renderer, float dt)
 {    
@@ -210,21 +203,8 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     this->activeCam->targetWidth = renderer->width;
     this->activeCam->targetHeight = renderer->height;
 
-    Mat4 world_to_clip = activeCam->getViewProjectionMatrix();
-
-    Quaternion rotQ = Quaternion::AngleAxis(rot, Vec3(0.0f, 1.0f, 0.0f));
-
-    RaycastHit hit;
-    if(world->lineCast(hit, activeCam->transform.position, activeCam->transform.position + 10.0f*activeCam->transform.forward()))
-    {
-        tempVec = hit.point;
-    }
-
-    Mat4 model_to_world = Mat4::TRS(tempVec, rotQ, Vec3(1.0f, 1.0f, 1.0f));
-    Mat4 model_to_clip = world_to_clip * model_to_world;
-
     renderer->clearScreen(Vec4(0.8f, 0.8f, 0.8f, 1.0f));
-    //renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
-
     world->render();
+    if(mode == Mode::Mode_Player)
+        gui->render(dt);
 }

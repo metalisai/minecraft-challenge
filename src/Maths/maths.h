@@ -100,6 +100,7 @@ public:
 	}
 
 	static Mat4 Perspective(float fov, float aspect, float zNear, float zFar);
+    static Mat4 Ortho(float l, float r, float b, float t, float zn, float zf);
 	static Mat4 Identity();
 	static Mat4 Rotation(struct Quaternion const &q);
 	static Mat4 TRS(Vec3 const &t, struct Quaternion const &r, Vec3 const &s);
@@ -281,6 +282,31 @@ inline Mat4 Mat4::Perspective(float fov, float aspect, float zNear, float zFar)
 	ret.m44 = 0.0f;
 
 	return ret;
+}
+
+inline Mat4 Mat4::Ortho(float l, float r, float b, float t, float zn, float zf)
+{
+    Mat4 ret;
+    ret.m11 = 2.0f / (r - l);
+    ret.m12 = 0;
+    ret.m13 = 0;
+    ret.m14 = -(r+l)/(r-l);
+
+    ret.m21 = 0;
+    ret.m22 = 2.0f / (t - b);
+    ret.m23 = 0;
+    ret.m24 = -(t+b)/(t-b);
+
+    ret.m31 = 0;
+    ret.m32 = 0;
+    ret.m33 = -2.0f/(zf-zn);
+    ret.m34 = -(zf+zn)/(zf-zn);
+
+    ret.m41 = 0;
+    ret.m42 = 0;
+    ret.m43 = 0;
+    ret.m44 = 1;
+    return ret;
 }
 
 inline Mat4 Mat4:: Rotation(struct Quaternion const &q)

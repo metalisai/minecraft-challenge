@@ -39,6 +39,11 @@ Mesh::~Mesh()
         delete[] this->normals;
         this->normals = nullptr;
     }
+    if(FLAGSET(this->flags, Mesh::Flags::HasColors))
+    {
+        delete[] this->colors;
+        this->colors = nullptr;
+    }
     this->flags = 0;
 }
 
@@ -57,6 +62,11 @@ void Mesh::copyVertices(const Vec3 *vertices, uint32_t count)
         {
             delete[] this->normals;
             this->flags &= ~Mesh::Flags::HasNormals;
+        }
+        if(FLAGSET(this->flags, Flags::HasColors))
+        {
+            delete[] this->colors;
+            this->flags &= ~Mesh::Flags::HasColors;
         }
     }
     if(!FLAGSET(this->flags, Flags::HasVertices) || count != this->numVertices)
@@ -108,6 +118,22 @@ void Mesh::copyTexCoords(const Vec3 *coords, uint32_t count)
     this->flags |= Flags::Dirty;
 }
 
+
+void Mesh::copyColors(const Vec4 *colors, uint32_t count)
+{
+    if(FLAGSET(this->flags, Flags::HasColors) && count != this->numVertices)
+    {
+        fprintf(stderr, "Number of colors didn't match number of vertices!\n");
+        return;
+    }
+    if(!FLAGSET(this->flags, Flags::HasColors))
+    {
+        this->colors = new Vec4[count];
+    }
+    memcpy(this->colors, colors, sizeof(Vec4)*count);
+    this->flags |= Flags::HasColors;
+    this->flags |= Flags::Dirty;
+}
 
 void Mesh::calculateNormals()
 {

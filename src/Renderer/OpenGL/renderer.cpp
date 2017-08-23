@@ -15,11 +15,9 @@ in vec3 normal;
 
 uniform mat4 world_to_clip;
 uniform mat4 model_to_world;
-//uniform mat4 MVP;
 
 uniform vec3 lightDir;
 
-out vec4 fragColor;
 out vec3 fragUv;
 out vec4 fragPos;
 out vec3 fragNormal;
@@ -40,7 +38,6 @@ const char* frag_shader_str =
 R"foo(#version 130
 out vec4 outColor;
 
-in vec4 fragColor;
 in vec3 fragUv;
 in vec4 fragPos;
 in vec3 fragNormal;
@@ -72,8 +69,49 @@ void main() {
     outColor = mix(color4, fogColor, fog);
 })foo";
 
+const char* solid_vertex_shader_str = 
+R"foo(#version 130
+in vec4 position; 
+in vec4 color;
+in vec3 uv;
+
+uniform mat4 world_to_clip;
+uniform mat4 model_to_world;
+
+out vec4 fragPos;
+out vec4 fragColor;
+out vec3 fragUv;
+
+void main() {
+    mat4 MVP = world_to_clip*model_to_world;
+	gl_Position = MVP*position;
+    fragPos = gl_Position;
+    fragColor = color;
+    fragUv = uv;
+})foo";
+
+const char* solid_frag_shader_str = 
+R"foo(#version 130
+out vec4 outColor;
+
+in vec4 fragPos;
+in vec4 fragColor;
+in vec3 fragUv;
+
+uniform sampler2DArray texArr;
+
+void main() {
+    vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
+    vec4 color4 = texture(texArr, uv3) * fragColor;
+    outColor = color4;
+})foo";
+
+
 Shader *Renderer::defaultShader;
 Material *Renderer::defaultMaterial;
+
+Shader *Renderer::solidShader;
+Material *Renderer::solidMaterial;
 
 Renderer::Renderer(float width, float height)
 {
@@ -84,6 +122,15 @@ Renderer::Renderer(float width, float height)
         defaultShader->addCode(Shader::CodeType::OpenGL_FragmentShader, frag_shader_str, strlen(frag_shader_str)); 
         defaultMaterial = new Material(defaultShader);
     }
+
+    if(solidShader == nullptr)
+    {
+        solidShader = new Shader();
+        solidShader->addCode(Shader::CodeType::OpenGL_VertexShader, solid_vertex_shader_str, strlen(solid_vertex_shader_str));
+        solidShader->addCode(Shader::CodeType::OpenGL_FragmentShader, solid_frag_shader_str, strlen(solid_vertex_shader_str));
+        solidMaterial = new Material(solidShader);
+    }
+
     this->width = width;
     this->height = height;
 
@@ -95,6 +142,18 @@ Renderer::Renderer(float width, float height)
     glEnable(GL_BLEND);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
+
+    immMesh = new Mesh();
+}
+
+Renderer::~Renderer()
+{
+    if(immMesh != nullptr)
+    {
+        delete immMesh;
+        immMesh = nullptr;
+    }
+    // TODO: should also delete all meshes, textures and materials?
 }
 
 void Renderer::clearScreen(Vec4 color)
@@ -140,6 +199,12 @@ static bool compile_shader(GLuint *compiledProgram, const char *vertexShader, co
 	GLuint program = glCreateProgram();
 	glAttachShader(program, vert_shader);
 	glAttachShader(program, frag_shader);
+
+    glBindAttribLocation(program, 0, "position");
+    glBindAttribLocation(program, 1, "uv");
+    glBindAttribLocation(program, 2, "normal");
+    glBindAttribLocation(program, 3, "color");
+
 	glLinkProgram(program);
 	GLint status;
 	glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -229,6 +294,10 @@ void Renderer::meshLoadData(Mesh *mesh)
     {
         vbufsize += mesh->numVertices*sizeof(Vec3);
     }
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasColors))
+    {
+        vbufsize += mesh->numVertices*sizeof(Vec4);
+    }
 
     // TODO: replace assert with logging an error?
     assert(FLAGSET(mesh->flags, Mesh::Flags::HasVertices));
@@ -260,6 +329,14 @@ void Renderer::meshLoadData(Mesh *mesh)
         glEnableVertexAttribArray(2);
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
         offset += mesh->numVertices*sizeof(Vec3);
+    }
+
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasColors))
+    {
+        glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec4), (GLvoid*)mesh->colors);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
+        offset += mesh->numVertices * sizeof(Vec4);
     }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)mesh->rendererHandle3);
@@ -298,11 +375,11 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
         if(vertCode == nullptr || fragCode == nullptr)
         {
             fprintf(stderr, "Material not completely initialized!\n");
+            __builtin_trap();
         }
         printf("compile shader!\n");
         GLuint program;
         compile_shader(&program, vertCode, fragCode);
-        glBindAttribLocation(program, 0, "position");
         material->shader->renderer_handle = program;
         material->shader->flags |= Shader::Flags::Loaded;
         material->shader->flags &= ~Shader::Flags::Dirty;
@@ -321,10 +398,12 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
     // TODO: move to separate function
     GLuint useProgram = ((GLuint)material->shader->renderer_handle);
     glUseProgram(useProgram);
+
     GLuint w2cM = glGetUniformLocation(useProgram, "world_to_clip");
     GLuint m2wM = glGetUniformLocation(useProgram, "model_to_world");
+    glUniformMatrix4fv(w2cM, 1, GL_FALSE, (GLfloat*)world_to_clip);
+    glUniformMatrix4fv(m2wM, 1, GL_FALSE, (GLfloat*)model_to_world);
 
-    //GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
     GLuint lightLoc = glGetUniformLocation(useProgram, "lightDir");
     GLuint diffuseLLoc = glGetUniformLocation(useProgram, "diffuseLight");
     GLuint fogColorLoc = glGetUniformLocation(useProgram, "fogColor");
@@ -335,9 +414,7 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
     glUniform3fv(lightLoc, 1, (GLfloat*)&lightDir);
     glUniform3fv(diffuseLLoc, 1, (GLfloat*)&diffuse);
     glUniform4fv(fogColorLoc, 1, (GLfloat*)&fogColor);
-    //glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
-    glUniformMatrix4fv(w2cM, 1, GL_FALSE, (GLfloat*)world_to_clip);
-    glUniformMatrix4fv(m2wM, 1, GL_FALSE, (GLfloat*)model_to_world);
+
     int texUnit = 0;
     for (auto it = material->textures.begin(); it != material->textures.end(); ++it)
     {
@@ -363,6 +440,68 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
     glDrawElements(GL_TRIANGLES, mesh->numIndices, GL_UNSIGNED_SHORT, 0);
     glBindVertexArray(0);
     glUseProgram(0);
+}
+
+void Renderer::renderImmediateQuad(Vec2 pos, Vec2 size, Vec4 color)
+{
+    unsigned int v = immediateVertexCount;
+    immediateVertices[v] = Vec3(pos.x, pos.y, 0.0f);
+    immediateTexCoords[v] = Vec3(0.0f, 0.0f, 0.0f);
+    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, 0.0f);
+    immediateTexCoords[v+1] = Vec3(1.0f, 0.0f, 0.0f);
+    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+2] = Vec3(1.0f, 1.0f, 0.0f);
+    immediateVertices[v+3] = Vec3(pos.x, pos.y, 0.0f);
+    immediateTexCoords[v+3] = Vec3(0.0f, 0.0f, 0.0f);
+    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+4] = Vec3(1.0f, 1.0f, 0.0f);
+    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+5] = Vec3(0.0f, 1.0f, 0.0f);
+    for(int i = 0; i < 6; i++)
+        immediateColors[v+i] = color;
+    immediateVertexCount += 6;
+    assert(immediateVertexCount < 65536);
+}
+
+void Renderer::renderImmediateQuad(Vec2 pos, Vec2 size, int texture)
+{
+    unsigned int v = immediateVertexCount;
+    immediateVertices[v] = Vec3(pos.x, pos.y, 0.0f);
+    immediateTexCoords[v] = Vec3(0.0f, 0.0f, texture);
+    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, 0.0f);
+    immediateTexCoords[v+1] = Vec3(1.0f, 0.0f, texture);
+    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+2] = Vec3(1.0f, 1.0f, texture);
+    immediateVertices[v+3] = Vec3(pos.x, pos.y, 0.0f);
+    immediateTexCoords[v+3] = Vec3(0.0f, 0.0f, texture);
+    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+4] = Vec3(1.0f, 1.0f, texture);
+    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, 0.0f);
+    immediateTexCoords[v+5] = Vec3(0.0f, 1.0f, texture);
+    for(int i = 0; i < 6; i++)
+        immediateColors[v+i] = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    immediateVertexCount += 6;
+    assert(immediateVertexCount < 65536);
+}
+
+void Renderer::flushImmediate()
+{
+    uint16_t indices[65536];
+    for(int i = 0; i < immediateVertexCount; i++)
+        indices[i] = i;
+    immMesh->copyVertices(immediateVertices, immediateVertexCount);
+    immMesh->copyIndices(indices, immediateVertexCount);
+    immMesh->copyTexCoords(immediateTexCoords, immediateVertexCount);
+    immMesh->copyColors(immediateColors, immediateVertexCount);
+    immediateVertexCount = 0; 
+    Mat4 identity = Mat4::Identity();
+    setBlend(true);
+    renderMesh(immMesh, solidMaterial, &immMatrix, &identity);
+}
+
+void Renderer::immediateMatrix(Mat4 *mat)
+{
+    immMatrix = *mat;
 }
 
 void Renderer::resize(float width, float height)

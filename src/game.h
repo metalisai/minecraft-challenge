@@ -1,6 +1,7 @@
 #include "Maths/maths.h"
 #include "camera.h"
 #include "Player/player.h"
+#include "GameWorld/blockstore.h"
 
 #include <SFML/Window.hpp>
 
@@ -13,6 +14,8 @@ public:
         Mode_FreeView,
         Mode_Player
     };
+
+    ~Game();
 
     void simulate(class Renderer* renderer, float dt);
     void updateAndRender(class Renderer *renderer, float dt);
@@ -29,9 +32,13 @@ public:
 
     Vec2 mousePosLast;
     Vec2 mouseDelta;
-
     Vec2 camRot;
+
+    BlockStore blockStore;
 
     // TODO: TEMPORARY
     sf::Window* window;
+    class Gui *gui = nullptr;
+    class World* world;
+    class TextureArray *atlas; // texture atlas
 };
