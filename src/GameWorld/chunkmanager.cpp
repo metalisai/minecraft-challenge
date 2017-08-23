@@ -32,6 +32,7 @@ bool ChunkManager::loadChunk(IVec3 chunkId)
         chunk = new Chunk(blockStore, world, chunkId, 16);
         chunk->regenerateMesh();
         loadedChunks.insert({chunkId, chunk});
+        printf("Load chunk %d %d %d\n", chunkId.x, chunkId.y, chunkId.z);
         return true;
     }
     return false;
@@ -43,6 +44,7 @@ void ChunkManager::unloadChunk(IVec3 chunkId)
     if(fchunk != loadedChunks.end())
     {
         delete fchunk->second;
+        printf("Unload chunk %d %d %d\n", chunkId.x, chunkId.y, chunkId.z);
         loadedChunks.erase(fchunk);
     }
 }
@@ -73,7 +75,6 @@ void ChunkManager::update()
 
     IVec3 loadedC[1000];
     int loadedCCount = 0;
-
 
     bool loadedSomething = false;
 
@@ -119,9 +120,11 @@ void ChunkManager::update()
     for(auto it = loadedChunks.begin(); it != loadedChunks.end(); ++it )
     {
         Chunk *chunk = it->second;
+        IVec3 chunkId = it->second->offset;
         if(FLAGSET(chunk->flags, Chunk::Flags::Dirty))
         {
             chunk->regenerateMesh();
+            printf("Reload chunk %d %d %d\n",chunkId.x, chunkId.y, chunkId.z); 
         }
     }
 

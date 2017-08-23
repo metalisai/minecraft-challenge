@@ -370,3 +370,6 @@ inline Quaternion operator *= (Quaternion &l, Quaternion const &r)
 }
 
 float perlin2D(Vec3 point, float frequency);
+
+#define mymin(x, y) (x < y ? x : y)
+#define mymax(x, y) (x > y ? x : y)

@@ -145,6 +145,23 @@ void Game::simulate(Renderer *renderer, float dt)
     world->update();
 }
 
+void Game::mouseClick(int button)
+{
+    RaycastHit hit;
+    if(world->lineCast(hit, mainCam.transform.position, mainCam.transform.position + 10.0f*mainCam.transform.forward()))
+    {
+        if (button == 0)
+        {
+            world->setBlockId(hit.block, 0);
+        }
+        else if(button == 1)
+        {
+            world->setBlockId(hit.block + hit.faceDirection, 1);
+        }
+    }
+
+}
+
 Vec3 tempVec;
 
 void Game::updateAndRender(Renderer *renderer, float dt)
@@ -162,10 +179,6 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     if(world->lineCast(hit, mainCam.transform.position, mainCam.transform.position + 10.0f*mainCam.transform.forward()))
     {
         tempVec = hit.point;
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-        {
-            world->setBlockId(hit.block, 0);
-        }
     }
 
     Mat4 model_to_world = Mat4::TRS(tempVec, rotQ, Vec3(1.0f, 1.0f, 1.0f));

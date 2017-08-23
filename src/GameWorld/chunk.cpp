@@ -20,7 +20,6 @@ Chunk::Chunk(BlockStore *blockStore, class World *world, IVec3 offset, int size)
 {
     this->flags = 0;
     this->offset = offset;
-    printf("%d %d %d\n", offset.x, offset.y, offset.z);
     this->size = size;
 
     this->mesh = nullptr;

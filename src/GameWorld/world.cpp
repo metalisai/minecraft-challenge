@@ -91,6 +91,22 @@ bool World::lineCast(RaycastHit &hit, Vec3 start, Vec3 end)
             {
                 hit.point = point;
                 hit.block = blockV;
+                
+                float offsetx = fabs(blockV.x - point.x);
+                float offsety = fabs(blockV.y - point.y);
+                float offsetz = fabs(blockV.z - point.z);
+
+                Vec3 offset0(fabs(0.0f - offsetx), fabs(0.0f - offsety), fabs(0.0f - offsetz));
+                Vec3 offset1(fabs(1.0f - offsetx), fabs(1.0f - offsety), fabs(1.0f - offsetz));
+
+                Vec3 minOffset(mymin(offset0.x, offset1.x), mymin(offset0.y, offset1.y), mymin(offset0.z, offset1.z));
+                if(minOffset.x < minOffset.y && minOffset.x < minOffset.z)
+                    hit.faceDirection = (offset0.x < offset1.x ? IVec3(-1, 0, 0) : IVec3(1, 0, 0));
+                else if(minOffset.y < minOffset.z)
+                    hit.faceDirection = (offset0.y < offset1.y ? IVec3(0, -1, 0) : IVec3(0, 1, 0));
+                else
+                    hit.faceDirection = (offset0.z < offset1.z ? IVec3(0, 0, -1) : IVec3(0, 0, 1));
+
                 return true;
             }
             lastBlock = blockV;

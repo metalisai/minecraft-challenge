@@ -50,6 +50,7 @@ flat in vec3 fragLightDir;
 uniform sampler2D tex;
 uniform sampler2DArray texArr;
 uniform vec3 diffuseLight;
+uniform vec4 fogColor;
 
 void main() {
     vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
@@ -64,10 +65,11 @@ void main() {
     // directional light
     float light = clamp(dot(normalize(fragLightDir), normalize(fragNormal)), 0.0, 1.0);
     vec3 maxCol = vec3(1.0, 1.0, 1.0) + diffuseLight;
+    // diffuse light
     color4.rgb = color4.rgb * light + color4.rgb * diffuseLight;
     color4.rgb = color4.rgb / maxCol;
 
-    outColor = mix(color4, vec4(0.8f, 0.8f, 0.8f, 1.0f), fog);
+    outColor = mix(color4, fogColor, fog);
 })foo";
 
 Shader *Renderer::defaultShader;
@@ -325,11 +327,14 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
     //GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
     GLuint lightLoc = glGetUniformLocation(useProgram, "lightDir");
     GLuint diffuseLLoc = glGetUniformLocation(useProgram, "diffuseLight");
+    GLuint fogColorLoc = glGetUniformLocation(useProgram, "fogColor");
     Vec3 lightDir(0.0f, 0.716f, 0.3f);
     lightDir = lightDir.normalized();
-    Vec3 diffuse(0.4f, 0.4f, 0.30f);
+    Vec3 diffuse(0.5f, 0.5f, 0.40f);
+    Vec4 fogColor(0.8f, 0.8f, 0.8f, 1.0f);
     glUniform3fv(lightLoc, 1, (GLfloat*)&lightDir);
     glUniform3fv(diffuseLLoc, 1, (GLfloat*)&diffuse);
+    glUniform4fv(fogColorLoc, 1, (GLfloat*)&fogColor);
     //glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
     glUniformMatrix4fv(w2cM, 1, GL_FALSE, (GLfloat*)world_to_clip);
     glUniformMatrix4fv(m2wM, 1, GL_FALSE, (GLfloat*)model_to_world);

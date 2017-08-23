@@ -48,14 +48,22 @@ void Application::doEvents()
     sf::Event event;
     while (window->pollEvent(event))
     {
-        if (event.type == sf::Event::Closed)
+        switch(event.type)
         {
-            this->exit();
-            break;
-        }
-        if(event.type == sf::Event::Resized)
-        {
-            this->mainRenderer->resize(event.size.width, event.size.height);
+            case sf::Event::Closed:
+                this->exit();
+                return;
+            case sf::Event::Resized:
+                this->mainRenderer->resize(event.size.width, event.size.height);
+                break;
+            case sf::Event::MouseButtonPressed:
+                if(event.mouseButton.button == sf::Mouse::Right)
+                    game->mouseClick(1);
+                if(event.mouseButton.button == sf::Mouse::Left)
+                    game->mouseClick(0);
+                break;
+            default:
+                break;
         }
     }
 }

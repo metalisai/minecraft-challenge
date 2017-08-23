@@ -30,6 +30,7 @@ struct RaycastHit
 {
     Vec3 point;
     IVec3 block;
+    IVec3 faceDirection;
 };
 
 class World

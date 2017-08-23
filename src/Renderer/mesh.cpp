@@ -41,7 +41,6 @@ Mesh::~Mesh()
     }
     this->flags = 0;
 }
-#include <assert.h>
 
 void Mesh::copyVertices(const Vec3 *vertices, uint32_t count)
 {

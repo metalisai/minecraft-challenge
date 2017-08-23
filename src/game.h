@@ -6,6 +6,7 @@ class Game
 public:
     void simulate(class Renderer* renderer, float dt);
     void updateAndRender(class Renderer *renderer, float dt);
+    void mouseClick(int button);
 
     bool initialized = false;
 
