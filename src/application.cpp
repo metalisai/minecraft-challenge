@@ -35,6 +35,7 @@ void Application::start()
     this->window = new sf::Window(sf::VideoMode(1024, 768), "Minecraft clone", sf::Style::Default, settings);
     this->mainRenderer = new Renderer(1024.0f, 768.0f);
     this->game = new Game();
+    this->game->window = this->window;
     initialized = true;
 
     glewInit();
@@ -61,6 +62,9 @@ void Application::doEvents()
                     game->mouseClick(1);
                 if(event.mouseButton.button == sf::Mouse::Left)
                     game->mouseClick(0);
+                break;
+            case sf::Event::KeyPressed:
+                game->keyPress(event.key.code);
                 break;
             default:
                 break;

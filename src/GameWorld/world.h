@@ -6,7 +6,6 @@
 #include "../Maths/maths.h"
 #include "chunk.h"
 #include "chunkmanager.h"
-#include "../camera.h"
 #include "worldgenerator.h"
 
 struct ChunkData
@@ -46,6 +45,7 @@ public:
 
     void update();
     void render();
+    void setCamera(class Camera *cam);
 
     std::unordered_map<IVec3, ChunkData*> chunks;
 
@@ -55,4 +55,6 @@ public:
     ChunkData *lastChunkAccess = nullptr;
     ChunkManager chunkManager;
     WorldGenerator worldGenerator;
+
+    Vec3 gravity;
 };

@@ -2,11 +2,13 @@
 #include <math.h>
 
 #include "../Maths/maths.h"
+#include "../camera.h"
 
 World::World(Renderer *renderer, BlockStore *blockStore, Camera *cam)
     : chunkManager(renderer, cam, blockStore, this), worldGenerator(this)
 {
     this->mainCam = cam;
+    gravity = {0.0f, -9.8f, 0.0f};
 }
 
 World::~World()
@@ -124,5 +126,11 @@ void World::update()
 void World::render()
 {
     chunkManager.render();
+}
+
+void World::setCamera(Camera *cam)
+{
+    this->mainCam = cam;    
+    chunkManager.camera = cam;
 }
 

@@ -7,7 +7,6 @@
 #include "GameWorld/blockstore.h"
 
 #include <cstdio>
-#include <SFML/Window.hpp>
 
 #define        STBI_NO_JPEG
 //#define        STBI_NO_PNG
@@ -54,6 +53,24 @@ World* world;
 
 float rot;
 
+void Game::setMode(uint32_t mode)
+{
+    this->mode = mode;
+
+    switch(mode)
+    {
+        case Mode::Mode_FreeView:
+            activeCam = &freeCam;
+            world->setCamera(&freeCam);
+            break;
+        case Mode::Mode_Player:
+            activeCam = &player.camera;
+            world->setCamera(&player.camera);
+            player.world = world;
+            break;
+    }
+}
+
 void Game::simulate(Renderer *renderer, float dt)
 {
     if(!initialized)
@@ -63,10 +80,12 @@ void Game::simulate(Renderer *renderer, float dt)
         mesh.copyTexCoords(quadTexCoords, 4);
         mesh.copyIndices(quadIndices, 12);
 
-        this->mainCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
+        this->freeCam.transform.position = Vec3(0.0f, 0.0f, 3.0f);
         // NOTE: also hardcoded in frag shader currently
-        this->mainCam.zNear = 0.1f;
-        this->mainCam.zFar = 100.0f;
+        this->freeCam.zNear = 0.1f;
+        this->freeCam.zFar = 100.0f;
+
+        player.transform.position = Vec3(0.0f, 10.0f, 0.0f);
 
         sf::Vector2i globalPosition = sf::Mouse::getPosition();
         mousePosLast = Vec2((float)globalPosition.x, (float)globalPosition.y);
@@ -105,50 +124,70 @@ void Game::simulate(Renderer *renderer, float dt)
         bs.createBlock(18, {"Leaves", {52, 52, 52, 52, 52, 52}});
         bs.createBlock(45, {"Brick", {7, 7, 7, 7, 7, 7}});
 
-        world = new World(renderer, &bs, &mainCam);
-    }
-
-    // TODO: input system
-    const float moveSpeed = 30.0f;
-    const float rotSpeed = 0.4f;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-    {
-        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.forward();
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-    {
-        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.forward();
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-    {
-        this->mainCam.transform.position -= dt*moveSpeed*mainCam.transform.right();
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-    {
-        this->mainCam.transform.position += dt*moveSpeed*mainCam.transform.right();
+        world = new World(renderer, &bs, &freeCam);
+        setMode(Mode::Mode_FreeView);
     }
 
     // get the global mouse position (relative to the desktop)
     sf::Vector2i globalPosition = sf::Mouse::getPosition();
     this->mouseDelta = Vec2(globalPosition.x - mousePosLast.x, globalPosition.y - mousePosLast.y);
+    sf::Mouse::setPosition(sf::Vector2i(renderer->width / 2.0f, renderer->height / 2.0f), *window);
+    globalPosition = sf::Mouse::getPosition();
     mousePosLast = Vec2((float)globalPosition.x, (float)globalPosition.y);
-    camRot += this->mouseDelta;
-    //camRot.x = fmod(camRot.x, 360.0f);
-    //camRot.y = fmod(camRot.y, 360.0f);
 
-    Quaternion rotX = Quaternion::AngleAxis(rotSpeed * camRot.x, Vec3(0.0f, 1.0f, 0.0f));
-    Quaternion rotY = Quaternion::AngleAxis(rotSpeed * camRot.y, Vec3(1.0f, 0.0f, 0.0f));
-    this->mainCam.transform.rotation = rotX * rotY;
+    // TODO: move somewhere else
+    if(mode == Mode::Mode_FreeView)
+    {
+        // TODO: input system
+        const float moveSpeed = 30.0f;
+        const float rotSpeed = 0.4f;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+        {
+            this->freeCam.transform.position += dt*moveSpeed*freeCam.transform.forward();
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+        {
+            this->freeCam.transform.position -= dt*moveSpeed*freeCam.transform.forward();
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+        {
+            this->freeCam.transform.position -= dt*moveSpeed*freeCam.transform.right();
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+        {
+            this->freeCam.transform.position += dt*moveSpeed*freeCam.transform.right();
+        }
+
+        camRot += this->mouseDelta;
+        //camRot.x = fmod(camRot.x, 360.0f);
+        //camRot.y = fmod(camRot.y, 360.0f);
+
+        Quaternion rotX = Quaternion::AngleAxis(rotSpeed * camRot.x, Vec3(0.0f, 1.0f, 0.0f));
+        Quaternion rotY = Quaternion::AngleAxis(rotSpeed * camRot.y, Vec3(1.0f, 0.0f, 0.0f));
+        this->freeCam.transform.rotation = rotX * rotY;
+    }
+    else
+    {
+        player.update(dt, mouseDelta);
+    }
 
     rot += 1.0f;
 
     world->update();
 }
 
+void Game::keyPress(sf::Keyboard::Key key)
+{
+    if(key == sf::Keyboard::F1)
+        setMode(Mode::Mode_Player);
+    else if(key == sf::Keyboard::F2)
+        setMode(Mode::Mode_FreeView);
+}
+
 void Game::mouseClick(int button)
 {
     RaycastHit hit;
-    if(world->lineCast(hit, mainCam.transform.position, mainCam.transform.position + 10.0f*mainCam.transform.forward()))
+    if(world->lineCast(hit, activeCam->transform.position, activeCam->transform.position + 10.0f*activeCam->transform.forward()))
     {
         if (button == 0)
         {
@@ -168,15 +207,15 @@ void Game::updateAndRender(Renderer *renderer, float dt)
 {    
     simulate(renderer, dt);
 
-    this->mainCam.targetWidth = renderer->width;
-    this->mainCam.targetHeight = renderer->height;
+    this->activeCam->targetWidth = renderer->width;
+    this->activeCam->targetHeight = renderer->height;
 
-    Mat4 world_to_clip = mainCam.getViewProjectionMatrix();
+    Mat4 world_to_clip = activeCam->getViewProjectionMatrix();
 
     Quaternion rotQ = Quaternion::AngleAxis(rot, Vec3(0.0f, 1.0f, 0.0f));
 
     RaycastHit hit;
-    if(world->lineCast(hit, mainCam.transform.position, mainCam.transform.position + 10.0f*mainCam.transform.forward()))
+    if(world->lineCast(hit, activeCam->transform.position, activeCam->transform.position + 10.0f*activeCam->transform.forward()))
     {
         tempVec = hit.point;
     }
@@ -185,7 +224,7 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     Mat4 model_to_clip = world_to_clip * model_to_world;
 
     renderer->clearScreen(Vec4(0.8f, 0.8f, 0.8f, 1.0f));
-    renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
+    //renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
 
     world->render();
 }
