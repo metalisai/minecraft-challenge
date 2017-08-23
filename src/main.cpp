@@ -7,6 +7,7 @@
 // day 4 start!
 // day 5 start!
 // day 6 start!
+// day 7 start! Is this finally over?
 
 int main(int argc, char *argv[])
 {
