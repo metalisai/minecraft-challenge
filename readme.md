@@ -4,5 +4,5 @@ My attempt to implement as many minecraft features as I can in a week. Written i
 
 Currently only tested on Ubuntu 14.04, should also run on Windows/Mac with minimal changes.
 
-![alt text](https://raw.githubusercontent.com/ttammear/minecraft-challenge/master/resources/ss0.png)
-![alt text](https://raw.githubusercontent.com/ttammear/minecraft-challenge/master/resources/ss1.png)
+![alt text](https://raw.githubusercontent.com/ttammear/minecraft-challenge/master/Resources/ss0.png)
+![alt text](https://raw.githubusercontent.com/ttammear/minecraft-challenge/master/Resources/ss1.png)
