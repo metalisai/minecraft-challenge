@@ -172,7 +172,7 @@ void Game::updateAndRender(Renderer *renderer, float dt)
     Mat4 model_to_clip = world_to_clip * model_to_world;
 
     renderer->clearScreen(Vec4(0.8f, 0.8f, 0.8f, 1.0f));
-    renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_clip);
+    renderer->renderMesh(&mesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
 
     world->render();
 }

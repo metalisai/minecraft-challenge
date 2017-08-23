@@ -159,10 +159,12 @@ void Chunk::regenerateMesh()
     mesh->copyVertices(vertices, vertCount);
     mesh->copyTexCoords(texCoords, vertCount);
     mesh->copyIndices(indices, indexCount);
+    mesh->calculateNormals();
 
     waterMesh->copyVertices(transVertices, transVertCount);
     waterMesh->copyTexCoords(transTexCoords, transVertCount);
     waterMesh->copyIndices(transIndices, transIndexCount);
+    waterMesh->calculateNormals();
 
     this->flags |= Flags::HasMesh;
     this->flags |= Flags::HasWaterMesh;

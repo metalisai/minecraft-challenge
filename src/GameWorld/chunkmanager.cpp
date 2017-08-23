@@ -139,8 +139,8 @@ void ChunkManager::render()
         IVec3 offset = it->second->offset;
         Vec3 offsetf(offset.x, offset.y, offset.z);
         Mat4 model_to_world = Mat4::TRS(offsetf, Quaternion::Identity(), Vec3(1.0f, 1.0f, 1.0f));
-        Mat4 model_to_clip = world_to_clip * model_to_world;
-        renderer->renderMesh(it->second->mesh, renderer->defaultMaterial, &model_to_clip);
+        //Mat4 model_to_clip = world_to_clip * model_to_world;
+        renderer->renderMesh(it->second->mesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
     }
     renderer->setBlend(true);
     for(auto it = loadedChunks.begin(); it != loadedChunks.end(); ++it )
@@ -148,8 +148,8 @@ void ChunkManager::render()
         IVec3 offset = it->second->offset;
         Vec3 offsetf(offset.x, offset.y, offset.z);
         Mat4 model_to_world = Mat4::TRS(offsetf, Quaternion::Identity(), Vec3(1.0f, 1.0f, 1.0f));
-        Mat4 model_to_clip = world_to_clip * model_to_world;
-        renderer->renderMesh(it->second->waterMesh, renderer->defaultMaterial, &model_to_clip);
+        //Mat4 model_to_clip = world_to_clip * model_to_world;
+        renderer->renderMesh(it->second->waterMesh, renderer->defaultMaterial, &model_to_world, &world_to_clip);
     }
 
 }

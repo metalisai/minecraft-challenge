@@ -11,9 +11,12 @@ const char* vertex_shader_str =
 R"foo(#version 130
 in vec4 position; 
 in vec3 uv;
-in vec4 color;
+in vec3 normal;
 
-uniform mat4 MVP;
+uniform mat4 world_to_clip;
+uniform mat4 model_to_world;
+//uniform mat4 MVP;
+
 uniform vec3 lightDir;
 
 out vec4 fragColor;
@@ -23,15 +26,14 @@ out vec3 fragNormal;
 flat out vec3 fragLightDir;
 
 void main() {
+    mat4 MVP = world_to_clip*model_to_world;
 	gl_Position = MVP*position;
     fragPos = gl_Position;
-    //fragColor = color;
     fragUv = uv;
-    //gl_Position = position;
 
-    mat3 MVP3 = mat3(MVP);
-    fragLightDir = MVP3 * lightDir;
-    fragNormal = MVP3 * vec3(0.0, 1.0, 0.0);
+    mat3 m2w3 = mat3(model_to_world);
+    fragLightDir = m2w3 * lightDir;
+    fragNormal = m2w3 * normal;
 })foo";
 
 const char* frag_shader_str = 
@@ -47,6 +49,7 @@ flat in vec3 fragLightDir;
 
 uniform sampler2D tex;
 uniform sampler2DArray texArr;
+uniform vec3 diffuseLight;
 
 void main() {
     vec3 uv3 = vec3(fragUv.x, 1.0f - fragUv.y, fragUv.z);
@@ -59,7 +62,10 @@ void main() {
     
     vec4 color4 = texture(texArr, uv3);
     // directional light
-    color4.rgb = color4.rgb * clamp(dot(normalize(fragLightDir), normalize(fragNormal)), 0.0, 1.0);
+    float light = clamp(dot(normalize(fragLightDir), normalize(fragNormal)), 0.0, 1.0);
+    vec3 maxCol = vec3(1.0, 1.0, 1.0) + diffuseLight;
+    color4.rgb = color4.rgb * light + color4.rgb * diffuseLight;
+    color4.rgb = color4.rgb / maxCol;
 
     outColor = mix(color4, vec4(0.8f, 0.8f, 0.8f, 1.0f), fog);
 })foo";
@@ -217,6 +223,10 @@ void Renderer::meshLoadData(Mesh *mesh)
     {
         vbufsize += mesh->numVertices*sizeof(Vec3);
     }
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasNormals))
+    {
+        vbufsize += mesh->numVertices*sizeof(Vec3);
+    }
 
     // TODO: replace assert with logging an error?
     assert(FLAGSET(mesh->flags, Mesh::Flags::HasVertices));
@@ -240,6 +250,14 @@ void Renderer::meshLoadData(Mesh *mesh)
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
         offset += mesh->numVertices*sizeof(Vec3);
         //printf("Set Tex coords\n");
+    }
+
+    if(FLAGSET(mesh->flags, Mesh::Flags::HasNormals))
+    {
+        glBufferSubData(GL_ARRAY_BUFFER, offset, mesh->numVertices*sizeof(Vec3), (GLvoid*)mesh->normals);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
+        offset += mesh->numVertices*sizeof(Vec3);
     }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, (GLuint)mesh->rendererHandle3);
@@ -268,7 +286,7 @@ void Renderer::meshUnload(Mesh *mesh)
     }
 }
 
-void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
+void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, Mat4 *world_to_clip)
 {
     // load shader if not loaded
     if(!FLAGSET(material->shader->flags, Shader::Flags::Loaded))
@@ -301,11 +319,20 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *MVP)
     // TODO: move to separate function
     GLuint useProgram = ((GLuint)material->shader->renderer_handle);
     glUseProgram(useProgram);
-    GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
+    GLuint w2cM = glGetUniformLocation(useProgram, "world_to_clip");
+    GLuint m2wM = glGetUniformLocation(useProgram, "model_to_world");
+
+    //GLuint mvpLoc = glGetUniformLocation(useProgram, "MVP");
     GLuint lightLoc = glGetUniformLocation(useProgram, "lightDir");
-    Vec3 lightDir(0.0f, 0.316f, 0.9486f);
+    GLuint diffuseLLoc = glGetUniformLocation(useProgram, "diffuseLight");
+    Vec3 lightDir(0.0f, 0.716f, 0.3f);
+    lightDir = lightDir.normalized();
+    Vec3 diffuse(0.4f, 0.4f, 0.30f);
     glUniform3fv(lightLoc, 1, (GLfloat*)&lightDir);
-    glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
+    glUniform3fv(diffuseLLoc, 1, (GLfloat*)&diffuse);
+    //glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, (GLfloat*)MVP);
+    glUniformMatrix4fv(w2cM, 1, GL_FALSE, (GLfloat*)world_to_clip);
+    glUniformMatrix4fv(m2wM, 1, GL_FALSE, (GLfloat*)model_to_world);
     int texUnit = 0;
     for (auto it = material->textures.begin(); it != material->textures.end(); ++it)
     {
