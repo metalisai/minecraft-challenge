@@ -1,6 +1,7 @@
 #include "worldgenerator.h"
 
 #include "world.h"
+#include "chunk.h"
 #include <assert.h>
 
 struct Biome
@@ -37,6 +38,8 @@ inline float clamp01(float a)
 {
     return a > 1.0f ? 1.0f : a < 0.0f ? 0.0f : a;
 }
+
+// TODO: I don't think this is how it should be done!
 
 static int calcBlockId(IVec3 position)
 {
@@ -82,15 +85,67 @@ static int calcBlockId(IVec3 position)
         return 0;
 }
 
+void WorldGenerator::addTree(IVec3 block, int height, int leafsize, int seed)
+{
+    // trunk
+    for(int i = 1; i < height+1; i++)
+    {
+        world->setBlockId(IVec3(block.x, block.y+i, block.z), 17);
+    }
+
+    int ysize = leafsize - 2;
+
+    for(int i = -leafsize; i <= leafsize; i++)
+    for(int j = -leafsize; j <= ysize; j++)
+    for(int k = -leafsize; k <= leafsize; k++)
+    {
+        if(rand() % 5 != 0 && (i != 0 || k != 0))
+        {
+            world->setBlockId(IVec3(block.x+i, block.y+j+height+1, block.z+k), 18);
+        }
+    } 
+}
+
 void WorldGenerator::fillChunk(IVec3 offset)
 {
+    IVec3 trees[100];
+    int treeLeafSizes[100];
+    int treeHeights[100];
+
+    uint32_t treeCount = 0;
+
+    uint32_t chunkSeed;
+    uint8_t xs = offset.x / 16;
+    uint8_t ys = offset.y / 16;
+    uint8_t zs = offset.z / 16;
+    chunkSeed = xs | ((ys & 1023) << 10) | ((zs & 1023) << 20);
+
+    srand(chunkSeed);
+
     const int chunkSize = 16;
     for(int i = 0; i < chunkSize; i++)
     for(int j = 0; j < chunkSize; j++)
     for(int k = 0; k < chunkSize; k++)
     {
         IVec3 block(offset.x + i, offset.y + j, offset.z + k);
-        world->setBlockId(block, calcBlockId(block));
+        uint8_t blockId = calcBlockId(block);
+        world->setBlockId(block, blockId);
+        if(blockId == 2 && rand() % 500 == 0) // grass
+        {
+            int index = treeCount++;
+            trees[index] = block;
+            treeLeafSizes[index] = 2+(rand()%2);
+            treeHeights[index] = 5+(rand()%4);
+        }
+    }
+
+    for(int i = 0; i < treeCount; i++)
+    {
+        // don't allow trees at chunk borders
+        // TODO: remove this limitation?
+        IVec3 loffset = Chunk::getLocalOffset(trees[i]);
+        if(loffset.x > 2 && loffset.x < 14 && loffset.z > 2 && loffset.z < 14)
+            addTree(trees[i], treeHeights[i], treeLeafSizes[i], chunkSeed);
     }
 }
 

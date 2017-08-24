@@ -320,7 +320,6 @@ void Renderer::meshLoadData(Mesh *mesh)
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)offset);
         offset += mesh->numVertices*sizeof(Vec3);
-        //printf("Set Tex coords\n");
     }
 
     if(FLAGSET(mesh->flags, Mesh::Flags::HasNormals))
@@ -375,7 +374,7 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
         if(vertCode == nullptr || fragCode == nullptr)
         {
             fprintf(stderr, "Material not completely initialized!\n");
-            __builtin_trap();
+            assert(false);
         }
         printf("compile shader!\n");
         GLuint program;
@@ -522,7 +521,7 @@ void Renderer::presentFrame(sf::Window *window)
     if(gerror != 0)
     {
         fprintf(stderr, "GL error %x\n", gerror);
-        __builtin_trap();
+        assert(false);
     }
 
     window->display();

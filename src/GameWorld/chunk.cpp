@@ -44,6 +44,12 @@ IVec3 Chunk::getChunkId(IVec3 block)
     return ret;
 }
 
+IVec3 Chunk::getLocalOffset(IVec3 block)
+{
+    IVec3 chunk = getChunkId(block);
+    return IVec3(block.x - chunk.x, block.y - chunk.y, block.z - chunk.z);
+}
+
 bool isTransparent(uint8_t blockId)
 {
     switch(blockId)
@@ -51,6 +57,8 @@ bool isTransparent(uint8_t blockId)
         case 0:
             return true;
         case 9:
+            return true;
+        case 18:
             return true;
         default:
             return false;

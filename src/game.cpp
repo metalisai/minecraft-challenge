@@ -8,7 +8,6 @@
 #include <cstdio>
 
 #define        STBI_NO_JPEG
-//#define        STBI_NO_PNG
 #define        STBI_NO_BMP
 #define        STBI_NO_PSD
 #define        STBI_NO_TGA
@@ -140,8 +139,6 @@ void Game::simulate(Renderer *renderer, float dt)
         }
 
         camRot += this->mouseDelta;
-        //camRot.x = fmod(camRot.x, 360.0f);
-        //camRot.y = fmod(camRot.y, 360.0f);
 
         Quaternion rotX = Quaternion::AngleAxis(rotSpeed * camRot.x, Vec3(0.0f, 1.0f, 0.0f));
         Quaternion rotY = Quaternion::AngleAxis(rotSpeed * camRot.y, Vec3(1.0f, 0.0f, 0.0f));

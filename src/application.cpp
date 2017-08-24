@@ -84,6 +84,7 @@ void Application::doFrame()
 {
     if(initialized)
     {
+        // TODO: variable frame rate!
         float dt60 = 1.0f / 60.0f;
         game->updateAndRender(mainRenderer, dt60);
         mainRenderer->presentFrame(this->window);

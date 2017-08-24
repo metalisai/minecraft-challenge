@@ -20,6 +20,7 @@ public:
 
     void regenerateMesh();
     static IVec3 getChunkId(IVec3 block);
+    static IVec3 getLocalOffset(IVec3 block);
 
     int size;
     IVec3 offset;
