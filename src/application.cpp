@@ -71,6 +71,9 @@ void Application::doEvents()
                 }
                 game->keyPress(event.key.code);
                 break;
+            case sf::Event::MouseWheelMoved:
+                game->mouseScroll(event.mouseWheel.delta);
+                break;
             default:
                 break;
         }

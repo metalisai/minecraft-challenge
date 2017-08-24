@@ -8,6 +8,7 @@
 // day 5 start!
 // day 6 start!
 // day 7 start! Is this finally over?
+// day 8 start - cheat day
 
 int main(int argc, char *argv[])
 {

@@ -445,17 +445,18 @@ void Renderer::renderMesh(Mesh *mesh, Material *material, Mat4 *model_to_world, 
 void Renderer::renderImmediateQuad(Vec2 pos, Vec2 size, Vec4 color)
 {
     unsigned int v = immediateVertexCount;
-    immediateVertices[v] = Vec3(pos.x, pos.y, 0.0f);
+    float depth = 0.0f;
+    immediateVertices[v] = Vec3(pos.x, pos.y, depth);
     immediateTexCoords[v] = Vec3(0.0f, 0.0f, 0.0f);
-    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, 0.0f);
+    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, depth);
     immediateTexCoords[v+1] = Vec3(1.0f, 0.0f, 0.0f);
-    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, depth);
     immediateTexCoords[v+2] = Vec3(1.0f, 1.0f, 0.0f);
-    immediateVertices[v+3] = Vec3(pos.x, pos.y, 0.0f);
+    immediateVertices[v+3] = Vec3(pos.x, pos.y, depth);
     immediateTexCoords[v+3] = Vec3(0.0f, 0.0f, 0.0f);
-    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, depth);
     immediateTexCoords[v+4] = Vec3(1.0f, 1.0f, 0.0f);
-    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, depth);
     immediateTexCoords[v+5] = Vec3(0.0f, 1.0f, 0.0f);
     for(int i = 0; i < 6; i++)
         immediateColors[v+i] = color;
@@ -466,17 +467,18 @@ void Renderer::renderImmediateQuad(Vec2 pos, Vec2 size, Vec4 color)
 void Renderer::renderImmediateQuad(Vec2 pos, Vec2 size, int texture)
 {
     unsigned int v = immediateVertexCount;
-    immediateVertices[v] = Vec3(pos.x, pos.y, 0.0f);
+    float depth = 0.0f;
+    immediateVertices[v] = Vec3(pos.x, pos.y, depth);
     immediateTexCoords[v] = Vec3(0.0f, 0.0f, texture);
-    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, 0.0f);
+    immediateVertices[v+1] = Vec3(pos.x + size.x, pos.y, depth);
     immediateTexCoords[v+1] = Vec3(1.0f, 0.0f, texture);
-    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+2] = Vec3(pos.x + size.x, pos.y + size.y, depth);
     immediateTexCoords[v+2] = Vec3(1.0f, 1.0f, texture);
-    immediateVertices[v+3] = Vec3(pos.x, pos.y, 0.0f);
+    immediateVertices[v+3] = Vec3(pos.x, pos.y, depth);
     immediateTexCoords[v+3] = Vec3(0.0f, 0.0f, texture);
-    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+4] = Vec3(pos.x + size.x, pos.y + size.y, depth);
     immediateTexCoords[v+4] = Vec3(1.0f, 1.0f, texture);
-    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, 0.0f);
+    immediateVertices[v+5] = Vec3(pos.x, pos.y + size.y, depth);
     immediateTexCoords[v+5] = Vec3(0.0f, 1.0f, texture);
     for(int i = 0; i < 6; i++)
         immediateColors[v+i] = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -496,7 +498,10 @@ void Renderer::flushImmediate()
     immediateVertexCount = 0; 
     Mat4 identity = Mat4::Identity();
     setBlend(true);
+    glDisable(GL_DEPTH_TEST);
+    // TODO: I imagine this will cause a massive pipeline stall!
     renderMesh(immMesh, solidMaterial, &immMatrix, &identity);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void Renderer::immediateMatrix(Mat4 *mat)

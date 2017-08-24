@@ -99,8 +99,8 @@ void Game::simulate(Renderer *renderer, float dt)
         blockStore.createBlock(18, {"Leaves", {53, 53, 53, 53, 53, 53}});
         blockStore.createBlock(45, {"Brick", {8, 8, 8, 8, 8, 8}});
 
-        world = new World(renderer, &blockStore, &freeCam);
-        setMode(Mode::Mode_FreeView);
+        world = new World(renderer, &blockStore, &player.camera);
+        setMode(Mode::Mode_Player);
 
         this->gui = new Gui(renderer, &this->player, &blockStore);
     }
@@ -172,6 +172,14 @@ void Game::keyPress(sf::Keyboard::Key key)
             }
         }
     }
+    else if(key == sf::Keyboard::Add)
+    {
+        player.inventory.nextSlot();
+    }
+    else if(key == sf::Keyboard::Subtract)
+    {
+        player.inventory.prevSlot();
+    }
 }
 
 void Game::mouseClick(int button)
@@ -190,9 +198,25 @@ void Game::mouseClick(int button)
             }
             else if(button == 1)
             {
-                world->setBlockId(hit.block + hit.faceDirection, 1);
+                uint8_t gotBlock = player.inventory.tryRemoveBlock(player.inventory.activeSlot);
+                if(gotBlock != 0)
+                {
+                    world->setBlockId(hit.block + hit.faceDirection, gotBlock);
+                }
             }
         }
+    }
+}
+
+void Game::mouseScroll(int delta)
+{
+    if(delta > 0)
+    {
+        player.inventory.nextSlot();
+    }
+    else if(delta < 0)
+    {
+        player.inventory.prevSlot();
     }
 }
 

@@ -161,6 +161,14 @@ struct Quaternion
 
 // Function declarations
 
+inline Vec2 operator + (Vec2 const &l, Vec2 const &r)
+{
+    Vec2 ret;
+    ret.x = l.x + r.x;
+    ret.y = l.y + r.y;
+    return ret;
+}
+
 inline Vec2 operator += (Vec2 &l, Vec2 const &r)
 {
 	l.x += r.x;

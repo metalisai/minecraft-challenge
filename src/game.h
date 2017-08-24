@@ -22,6 +22,7 @@ public:
     void mouseClick(int button);
     void keyPress(sf::Keyboard::Key key);
     void setMode(uint32_t mode);
+    void mouseScroll(int delta);
 
     bool initialized = false;
     uint32_t mode = Mode::Mode_FreeView;
